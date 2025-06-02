@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
 
 const MOCK_USERS = ['user001', 'user002', 'user003'];
 
@@ -26,7 +27,7 @@ export default function SnackForm() {
     if (!userId) return alert('Please select your User ID.');
 
     await addDoc(collection(db, 'snackLogs'), {
-      userId,
+      userId: auth.currentUser?.uid,
       timestamp: Timestamp.now(),
       numItems: itemCount,
       itemType,
