@@ -21,6 +21,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const requester = await admin.auth().getUser(requesterUid);
     const isRequesterAdmin = requester.customClaims?.admin === true;
 
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ error: 'Missing or invalid email.' });
+    }
+    
     if (!isRequesterAdmin) {
       return res.status(403).json({ error: 'Only admins can set admin claims.' });
     }
@@ -28,9 +32,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 🎯 Set claim
     const targetUser = await admin.auth().getUserByEmail(email);
     await admin.auth().setCustomUserClaims(targetUser.uid, { admin: true });
-
     return res.status(200).json({ success: true });
-  } catch (error: any) {
+  
+  } 
+  catch (error: any) {
     console.error(error);
     return res.status(500).json({ error: error.message });
   }

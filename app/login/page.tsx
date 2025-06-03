@@ -17,26 +17,21 @@ type UserMeta = {
 export default function LoginPage() {
   const [users, setUsers] = useState<UserMeta[]>([]);
   const [selectedUid, setSelectedUid] = useState('');
+  const [emailMap, setEmailMap] = useState<Record<string, string>>({});
+  const [typedEmail, setTypedEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailMap, setEmailMap] = useState<Record<string, string>>({});
   const router = useRouter();
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        console.log('Current user:', auth.currentUser); // 👈 Log current user for debugging
         const snap = await getDocs(collection(db, 'users'));
-        
         const userList: UserMeta[] = [];
         const map: Record<string, string> = {};
 
         snap.forEach((doc) => {
           const data = doc.data();
-          const label = data.company
-            ? `${data.company}`
-            : `${data.firstName} ${data.lastName}`;
-
           userList.push({
             uid: doc.id,
             email: data.email,
@@ -44,35 +39,31 @@ export default function LoginPage() {
             lastName: data.lastName,
             company: data.company,
           });
-
           map[doc.id] = data.email;
         });
 
         setUsers(userList);
         setEmailMap(map);
       } catch (err) {
-        console.error('🔥 Error fetching users:', err); // 👈 Log error clearly
+        console.error('🔥 Error fetching users:', err);
       }
     };
 
     fetchUsers();
   }, []);
 
-  
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const email = emailMap[selectedUid];
+    const email = selectedUid ? emailMap[selectedUid] : typedEmail;
+
     if (!email) {
-      alert('Please select a user');
+      alert('Please select a user or enter an email.');
       setLoading(false);
       return;
     }
 
-
-    
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/');
@@ -90,9 +81,11 @@ export default function LoginPage() {
     >
       <h2 className="text-2xl font-bold mb-4">Log In</h2>
 
-      <label className="block text-sm font-medium text-gray-700">Select your name or company</label>
+      <label className="block text-sm font-medium text-gray-700">
+        Select your name or company <span className="text-gray-500">(or enter email)</span>
+      </label>
+
       <select
-        required
         value={selectedUid}
         onChange={(e) => setSelectedUid(e.target.value)}
         className="w-full border p-2 rounded"
@@ -100,18 +93,31 @@ export default function LoginPage() {
         <option value="">-- Select User --</option>
         {users.map((user) => (
           <option key={user.uid} value={user.uid}>
-            {user.company ? user.company : `${user.firstName} ${user.lastName}`}
+            {user.company || `${user.firstName} ${user.lastName}`}
           </option>
         ))}
       </select>
+
+      <div className="text-center text-sm text-gray-500">or</div>
+
+      <input
+        type="email"
+        placeholder="Email"
+        value={typedEmail}
+        onChange={(e) => {
+          setTypedEmail(e.target.value);
+          setSelectedUid(''); // Clear dropdown selection
+        }}
+        className="w-full border p-2 rounded"
+      />
 
       <input
         required
         type="password"
         placeholder="Password"
-        className="w-full border p-2 rounded"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        className="w-full border p-2 rounded"
       />
 
       <button
