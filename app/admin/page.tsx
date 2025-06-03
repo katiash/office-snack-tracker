@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
+import { utils as XLSXUtils, writeFile } from 'xlsx'; // ✅ At top of file
 
 type UserMeta = {
   uid: string;
@@ -68,6 +69,24 @@ export default function AdminPage() {
   if (!isAdmin) return <p>⛔ Access Denied</p>;
 
 
+  const handleExportCSV = () => {
+    const csvData = logs.map((log) => ({
+      Date: log.timestamp?.toDate().toLocaleDateString() || '',
+      User:
+        userMap[log.userId]?.company ||
+        `${userMap[log.userId]?.firstName || ''} ${userMap[log.userId]?.lastName || ''}`.trim(),
+      Item: log.itemType,
+      Count: log.count,
+      Total: log.total?.toFixed(2) || '0.00',
+    }));
+  
+    const worksheet = XLSXUtils.json_to_sheet(csvData);
+    const workbook = XLSXUtils.book_new();
+    XLSXUtils.book_append_sheet(workbook, worksheet, 'Snack Logs');
+  
+    writeFile(workbook, 'snack_logs.csv');
+  };
+
   const handleMakeAdmin = async (targetUid: string) => {
     const targetMeta = userMap[targetUid];
     console.log('🧠 Making admin for:', targetMeta);
@@ -109,6 +128,13 @@ export default function AdminPage() {
   return (
     <div className="p-6">
       <h2 className="text-xl font-bold mb-4">Snack Usage Logs</h2>
+
+      <button
+        onClick={handleExportCSV}
+        className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+      >
+        ⬇️ Download CSV
+      </button>
       <table className="w-full border text-sm">
         <thead>
           <tr className="bg-orange-100">
