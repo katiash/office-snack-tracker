@@ -1,129 +1,123 @@
 'use client';
 
-import React, { useState } from 'react';
-import { db } from '@/lib/firebase';
+import { useState } from 'react';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
-
-const MOCK_USERS = ['user001', 'user002', 'user003'];
+import { auth, db } from '@/lib/firebase';
 
 export default function SnackForm() {
-  const [userId, setUserId] = useState('');
   const [itemCount, setItemCount] = useState(1);
-  const [itemType, setItemType] = useState('Snack');
+  const [itemType, setItemType] = useState('snack');
   const [description, setDescription] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('venmo');
-  const [applyFee, setApplyFee] = useState(false);
-  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const subtotal = itemCount * 2;
-  const adminFee = paymentMethod === 'invoice' && applyFee ? subtotal * 0.2 : 0;
+  const unitPrice = 2;
+  const subtotal = unitPrice * itemCount;
+  const adminFee = itemType === 'print' ? subtotal * 0.2 : 0;
   const total = subtotal + adminFee;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) {
+      alert('You must be logged in to submit.');
+      return;
+    }
 
-    if (!userId) return alert('Please select your User ID.');
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'snackLogs'), {
+        userId: user.uid,
+        timestamp: Timestamp.now(),
+        itemType,
+        count: itemCount,
+        description,
+        subtotal,
+        adminFee,
+        total,
+      });
 
-    await addDoc(collection(db, 'snackLogs'), {
-      userId: auth.currentUser?.uid,
-      timestamp: Timestamp.now(),
-      numItems: itemCount,
-      itemType,
-      description,
-      paymentMethod,
-      subtotal,
-      adminFee,
-      total,
-    });
-
-    router.push('/thank-you');
+      setSuccess(true);
+      setItemCount(1);
+      setItemType('snack');
+      setDescription('');
+    } catch (err: any) {
+      console.error('Error logging item:', err);
+      alert('Something went wrong.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-4 bg-white rounded-lg shadow">
-      <h1 className="text-xl font-semibold text-gray-800">🍿 Office Snack Tracker</h1>
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-md mx-auto bg-white p-6 rounded shadow-md space-y-4"
+    >
+      <h2 className="text-xl font-semibold mb-2">🍿 Office Snack Tracker</h2>
 
-      <label className="block">
-        <span>User ID</span>
-        <select
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          className="w-full mt-1 p-2 border rounded"
-        >
-          <option value="">Select a user</option>
-          {MOCK_USERS.map((id) => (
-            <option key={id} value={id}>{id}</option>
-          ))}
-        </select>
-      </label>
-
-      <label className="block">
-        <span>Number of Items</span>
-        <div className="flex items-center space-x-2 mt-1">
-          <button type="button" onClick={() => setItemCount(Math.max(1, itemCount - 1))} className="px-2 py-1 border rounded">–</button>
+      <div className="flex items-center gap-2">
+        <label className="w-1/3">Number of Items</label>
+        <div className="flex gap-2 items-center">
+          <button
+            type="button"
+            onClick={() => setItemCount((c) => Math.max(1, c - 1))}
+            className="px-3 py-1 bg-orange-200 rounded"
+          >
+            −
+          </button>
           <span>{itemCount}</span>
-          <button type="button" onClick={() => setItemCount(itemCount + 1)} className="px-2 py-1 border rounded">+</button>
+          <button
+            type="button"
+            onClick={() => setItemCount((c) => c + 1)}
+            className="px-3 py-1 bg-orange-200 rounded"
+          >
+            +
+          </button>
         </div>
-      </label>
+      </div>
 
-      <label className="block">
-        <span>Item Type</span>
+      <div>
+        <label className="block mb-1">Item Type</label>
         <select
           value={itemType}
           onChange={(e) => setItemType(e.target.value)}
-          className="w-full mt-1 p-2 border rounded"
+          className="w-full border p-2 rounded"
         >
-          <option>Snack</option>
-          <option>Drink</option>
-          <option>Water</option>
+          <option value="snack">Snack</option>
+          <option value="drink">Drink</option>
+          <option value="print">Print</option>
         </select>
-      </label>
-
-      <label className="block">
-        <span>Description</span>
-        <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full mt-1 p-2 border rounded"
-          placeholder="e.g. Sparkling Water, Doritos"
-        />
-      </label>
-
-      <label className="block">
-        <span>Payment Method</span>
-        <select
-          value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-          className="w-full mt-1 p-2 border rounded"
-        >
-          <option value="venmo">Venmo</option>
-          <option value="cash">Cash</option>
-          <option value="invoice">Add to Invoice</option>
-        </select>
-      </label>
-
-      {paymentMethod === 'invoice' && (
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={applyFee}
-            onChange={(e) => setApplyFee(e.target.checked)}
-          />
-          Apply 20% Admin Fee
-        </label>
-      )}
-
-      <div className="text-sm text-gray-600">
-        Subtotal: ${subtotal.toFixed(2)}<br />
-        Admin Fee: ${adminFee.toFixed(2)}<br />
-        <strong>Total: ${total.toFixed(2)}</strong>
       </div>
 
-      <button type="submit" className="w-full py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
-        Submit & Log This Snack
+      <div>
+        <label className="block mb-1">Description</label>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="e.g. Sparkling Water, Doritos"
+          className="w-full border p-2 rounded"
+        />
+      </div>
+
+      <div className="text-sm text-gray-600 mt-2">
+        <p>Subtotal: ${subtotal.toFixed(2)}</p>
+        <p>Admin Fee: ${adminFee.toFixed(2)}</p>
+        <p className="font-bold text-black">Total: ${total.toFixed(2)}</p>
+      </div>
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="w-full py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
+      >
+        {submitting ? 'Logging...' : 'Submit & Log This Item'}
       </button>
+
+      {success && (
+        <p className="text-green-600 text-sm mt-2">✅ Item logged successfully!</p>
+      )}
     </form>
   );
 }
