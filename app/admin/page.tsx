@@ -141,12 +141,38 @@ export default function AdminPage() {
               >
                 Make Admin
               </button>
-                <button
-                  className="text-xs text-red-600 underline"
-                  onClick={() => console.log('Reset Password:', log.userId)}
-                >
-                  Reset Password
-                </button>
+              <button
+                className="text-xs text-red-600 underline"
+                onClick={async () => {
+                  const email = userMap[log.userId]?.email;
+                  if (!email) {
+                    alert('❌ No email found for this user.');
+                    return;
+                  }
+
+                  try {
+                    const res = await fetch('/api/send-reset-password', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email }),
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                      alert('✅ Password reset link sent.');
+                      console.log('🔗 Reset link:', data.link);
+                    } else {
+                      alert('❌ Failed: ' + data.error);
+                    }
+                  } catch (err: any) {
+                    console.error('Error sending reset:', err);
+                    alert('Unexpected error: ' + err.message);
+                  }
+                }}
+              >
+                Reset Password
+              </button>
               </td>
             </tr>
           ))}
