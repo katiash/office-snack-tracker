@@ -21,9 +21,13 @@ type UserMeta = {
 
 type SnackLog = {
   userId: string;
-  itemType: string;
-  count: number;
   timestamp: Timestamp;
+  itemType: string;
+  printType?: 'bw' | 'color' | null;
+  count: number;
+  description: string;
+  subtotal: number;
+  adminFee: number;
   total: number;
 };
 
@@ -238,7 +242,8 @@ export default function AdminPage() {
               <thead className="bg-gray-50 text-gray-700 text-left">
                 <tr>
                   <th className="p-3">User</th>
-                  <th className="p-3">Item</th>
+                  <th className="p-3 text-center">Item Type</th>
+                  <th className="p-3 text-center">Print Type</th>
                   <th className="p-3 text-center">Count</th>
                   <th className="p-3 text-right">Total</th>
                   <th className="p-3 text-right">Date</th>
@@ -254,6 +259,11 @@ export default function AdminPage() {
                         (log.userId === currentUser?.uid ? '(You)' : log.userId)}
                     </td>
                     <td className="p-3">{log.itemType}</td>
+                    <td className="p-3 text-center">
+                      {log.itemType === 'print' ? (
+                        log.printType === 'color' ? '🎨 Color' : '🖨️ B/W'
+                      ) : '—'}
+                    </td>
                     <td className="p-3 text-center">{log.count}</td>
                     <td className="p-3 text-right">${log.total?.toFixed(2)}</td>
                     <td className="p-3 text-right">{log.timestamp?.toDate().toLocaleDateString()}</td>

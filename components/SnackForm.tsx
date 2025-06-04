@@ -5,6 +5,7 @@ interface SnackLog {
   userId: string;
   timestamp: Timestamp; // Replace 'any' with the appropriate type if available
   itemType: string;
+  printType?: 'bw' | 'color';
   count: number;
   description: string;
   subtotal: number;
@@ -18,14 +19,19 @@ import { auth, db } from '@/lib/firebase';
 export default function SnackForm() {
   const [itemCount, setItemCount] = useState(1);
   const [itemType, setItemType] = useState('snack');
+  const [printType, setPrintType] = useState<'bw' | 'color'>('bw');
+  // printType is only relevant if itemType is 'print'
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [userTotalOwed, setUserTotalOwed] = useState<number>(0);
 
-  const unitPrice = 2;
+  const unitPrice =
+  itemType === 'print'
+    ? (printType === 'color' ? 0.5 : 0.15)
+    : 2;
   const subtotal = unitPrice * itemCount;
-  const adminFee = itemType === 'print' ? subtotal * 0.2 : 0;
+  const adminFee = itemType === 'drink' || itemType === 'snack' ? subtotal * 0.2 : 0;
   const total = subtotal + adminFee;
 
 
@@ -55,6 +61,7 @@ export default function SnackForm() {
         userId: user.uid,
         timestamp: Timestamp.now(),
         itemType,
+        printType: itemType === 'print' ? printType : null, // Only include if itemType is 'print'
         count: itemCount,
         description,
         subtotal,
@@ -117,6 +124,20 @@ export default function SnackForm() {
             <option value="print">Print</option>
           </select>
         </div>
+
+        {itemType === 'print' && (
+          <div>
+            <label className="block mb-1">Print Type</label>
+            <select
+              value={printType}
+              onChange={(e) => setPrintType(e.target.value as 'bw' | 'color')}
+              className="w-full border p-2 rounded"
+            >
+              <option value="bw">Black & White</option>
+              <option value="color">Color</option>
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block mb-1">Description</label>
