@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
 interface SnackLog {
   userId: string;
-  timestamp: any; // Replace 'any' with the appropriate type if available
+  timestamp: Timestamp; // Replace 'any' with the appropriate type if available
   itemType: string;
   count: number;
   description: string;

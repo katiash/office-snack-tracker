@@ -27,6 +27,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     console.log('📩 Incoming body:', req.body);
     console.log('🔍 Requester:', requester.email, 'isAdmin:', isRequesterAdmin);
+    // 🎗️ Might be undefined if not set:
+    // if (!email || typeof email !== 'string' || !email.includes('@')) {
+    //   return res.status(400).json({ error: 'Missing or invalid email.' });
+    // }
 
     // ✅ Set custom claims
     await admin.auth().setCustomUserClaims(uid, {
