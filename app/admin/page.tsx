@@ -9,6 +9,7 @@ import { utils as XLSXUtils, writeFile } from 'xlsx';
 import { Timestamp } from 'firebase/firestore';
 import DatePicker from 'react-datepicker';
 import ProfileModal from '@/components/ProfileModal';
+import { convertLogsToCSV } from '@/lib/exportToCSV';
 
 type UserMeta = {
   uid: string;
@@ -135,6 +136,18 @@ export default function AdminPage() {
   });
 
   const handleExportCSV = () => {
+    const csv = convertLogsToCSV(filteredLogs, userMap);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `snack-logs-${dateStr}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportXLSX = () => {
     const csvData = filteredLogs.map((log) => ({
       Date: log.timestamp?.toDate().toLocaleDateString() || '',
       Email: userMap[log.userId]?.email || '',
@@ -221,13 +234,23 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleExportCSV}
-            className="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 transition"
-          >
-            ⬇️ Export CSV
-          </button>
+          <div className="flex flex-wrap gap-3 mt-6">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 bg-[#799c75] text-white px-5 py-2 rounded-lg shadow-sm hover:bg-[#6a8c65] transition-all"
+            >
+              📥 Export CSV
+              <span className="text-xs opacity-80">(csv)</span>
+            </button>
 
+            <button
+              onClick={handleExportXLSX}
+              className="flex items-center gap-2 bg-[#799c75] text-white px-5 py-2 rounded-lg shadow-sm hover:bg-[#6a8c65] transition-all"
+            >
+              📊 Export Excel
+              <span className="text-xs opacity-80">(xlsx)</span>
+            </button>
+          </div>
            {/* 💵 Selected user summary */}
           <div className="overflow-x-auto mt-6">
           {selectedUserId && (
