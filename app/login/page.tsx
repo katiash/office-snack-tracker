@@ -67,8 +67,10 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/');
-    } catch (err: any) {
-      alert('Login failed: ' + err.message);
+    } catch (err) {
+      const error = err as Error;
+      console.error('Login error:', error);
+      alert('Error: ' + error.message);
     } finally {
       setLoading(false);
     }

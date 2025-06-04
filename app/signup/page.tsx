@@ -32,9 +32,14 @@ export default function SignupPage() {
       });
 
       router.push('/');
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        console.error('Unexpected signup error:', err);
+        alert('Something went wrong during signup.');
+      }
+    }finally {
       setLoading(false);
     }
   };

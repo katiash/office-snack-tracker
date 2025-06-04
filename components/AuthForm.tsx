@@ -30,8 +30,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
       }
 
       router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        console.error('Unexpected error during auth:', err);
+        alert('Something went wrong.');
+      }
     }
   };
 

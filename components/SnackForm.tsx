@@ -41,9 +41,13 @@ export default function SnackForm() {
       setItemCount(1);
       setItemType('snack');
       setDescription('');
-    } catch (err: any) {
-      console.error('Error logging item:', err);
-      alert('Something went wrong.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        console.error('Unexpected error in snack form:', err);
+        alert('An unexpected error occurred.');
+      }
     } finally {
       setSubmitting(false);
     }

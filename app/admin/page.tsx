@@ -5,6 +5,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { utils as XLSXUtils, writeFile } from 'xlsx'; // ✅ At top of file
+import { Timestamp } from 'firebase/firestore';
 
 type UserMeta = {
   uid: string;
@@ -18,7 +19,7 @@ type SnackLog = {
   userId: string;
   itemType: string;
   count: number;
-  timestamp: any;
+  timestamp: Timestamp;
   total: number;
 };
 
@@ -119,9 +120,10 @@ export default function AdminPage() {
         const err = await res.text();
         alert('❌ Failed to make admin: ' + err);
       }
-    } catch (err: any) {
-      console.error('🔥 API error:', err);
-      alert('Unexpected error: ' + err.message);
+    } catch (err) {
+      const error = err as Error;
+      console.error('Error sending reset:', error);
+      alert('Unexpected error: ' + error.message);
     }
   };
 
@@ -191,9 +193,10 @@ export default function AdminPage() {
                     } else {
                       alert('❌ Failed: ' + data.error);
                     }
-                  } catch (err: any) {
-                    console.error('Error sending reset:', err);
-                    alert('Unexpected error: ' + err.message);
+                  } catch (err) {
+                    const error = err as Error;
+                    console.error('🔥 API error:', error);
+                    alert('Unexpected error: ' + error.message);
                   }
                 }}
               >
