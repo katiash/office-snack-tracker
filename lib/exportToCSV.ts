@@ -1,7 +1,6 @@
 // lib/exportToCSV.ts
 
-import { SnackLog } from '@/types';
-import { UserMap } from '@/types';
+import type { SnackLog, UserMap } from '../types';
 
 export function convertLogsToCSV(logs: SnackLog[], userMap: UserMap): string {
   const headers = ['Date', 'Email', 'User', 'Item', 'Print Type', 'Count', 'Total'];
