@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const currentUser = auth.currentUser;
   const currentMeta = currentUser ? userMap[currentUser.uid] : undefined;
@@ -125,6 +126,7 @@ export default function AdminPage() {
     if (!logDate) return false;
     if (startDate && logDate < startDate) return false;
     if (endDate && logDate > endDate) return false;
+    if (selectedUserId && log.userId !== selectedUserId) return false;
     return true;
   });
 
@@ -178,6 +180,24 @@ export default function AdminPage() {
         <section>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📦 Snack Logs</h2>
 
+          {/* 👤 Filter by User */}
+          <div className="mb-6">
+            <label className="block text-sm text-gray-600 mb-1">Filter by User</label>
+            <select
+              value={selectedUserId || ''}
+              onChange={(e) => setSelectedUserId(e.target.value || null)}
+              className="border border-gray-300 p-2 rounded-md w-full max-w-sm"
+            >
+              <option value="">All Users</option>
+              {Object.values(userMap).map((user) => (
+                <option key={user.uid} value={user.uid}>
+                  {user.firstName} {user.lastName} ({user.email})
+                </option>
+              ))}
+          </select>
+        </div>
+          
+          {/* 📅 Date Pickers */}
           <div className="flex flex-wrap gap-6 mb-4">
             <div>
               <label className="text-sm text-gray-600 block mb-1">Start Date</label>
@@ -204,7 +224,16 @@ export default function AdminPage() {
             ⬇️ Export CSV
           </button>
 
+           {/* 💵 Selected user summary */}
           <div className="overflow-x-auto mt-6">
+          {selectedUserId && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg shadow-sm mb-4">
+              <span className="text-sm">🧾 Total for selected user in this date range:</span>
+              <div className="text-2xl font-bold mt-1">
+                ${filteredLogs.reduce((sum, log) => sum + (log.total || 0), 0).toFixed(2)}
+              </div>
+            </div>
+          )}
             <table className="min-w-full text-sm bg-white rounded-lg overflow-hidden">
               <thead className="bg-gray-50 text-gray-700 text-left">
                 <tr>
@@ -237,6 +266,7 @@ export default function AdminPage() {
 
         {/* User Management */}
         <section>
+          
           <h2 className="text-xl font-semibold text-gray-800 mb-4">👥 User Management</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm bg-white rounded-lg overflow-hidden">
