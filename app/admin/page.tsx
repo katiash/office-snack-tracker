@@ -252,7 +252,6 @@ export default function AdminPage() {
             </button>
           </div>
            {/* 💵 Selected user summary */}
-          <div className="overflow-x-auto mt-6">
           {selectedUserId && (
             <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg shadow-sm mb-4">
               <span className="text-sm">🧾 Total for selected user in this date range:</span>
@@ -261,39 +260,43 @@ export default function AdminPage() {
               </div>
             </div>
           )}
-            <table className="min-w-full text-sm bg-white rounded-lg overflow-hidden">
-              <thead className="bg-gray-50 text-gray-700 text-left">
-                <tr>
-                  <th className="p-3">User</th>
-                  <th className="p-3 text-center">Item Type</th>
-                  <th className="p-3 text-center">Print Type</th>
-                  <th className="p-3 text-center">Count</th>
-                  <th className="p-3 text-right">Total</th>
-                  <th className="p-3 text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLogs.map((log, i) => (
-                  <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      {userMap[log.userId]?.company ||
-                        `${userMap[log.userId]?.firstName || ''} ${userMap[log.userId]?.lastName || ''}`.trim() ||
-                        userMap[log.userId]?.email ||
-                        (log.userId === currentUser?.uid ? '(You)' : log.userId)}
-                    </td>
-                    <td className="p-3">{log.itemType}</td>
-                    <td className="p-3 text-center">
-                      {log.itemType === 'print' ? (
-                        log.printType === 'color' ? '🎨 Color' : '🖨️ B/W'
-                      ) : '—'}
-                    </td>
-                    <td className="p-3 text-center">{log.count}</td>
-                    <td className="p-3 text-right">${log.total?.toFixed(2)}</td>
-                    <td className="p-3 text-right">{log.timestamp?.toDate().toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+            <div className="mt-6 rounded-md border border-gray-200 shadow-sm overflow-x-auto">
+            <div className="max-h-[600px] overflow-y-auto">
+              <table className="min-w-full text-sm bg-white">
+                  <thead>
+                    <tr>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-left w-40 max-w-[10rem]">User</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Item Type</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Print Type</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Count</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-right">Total</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-right">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.map((log, i) => (
+                      <tr key={i} className="border-b hover:bg-gray-50">
+                       <td className="p-3 text-left w-40 max-w-[10rem] whitespace-normal break-words">
+                          {userMap[log.userId]?.company ||
+                            `${userMap[log.userId]?.firstName || ''} ${userMap[log.userId]?.lastName || ''}`.trim() ||
+                            userMap[log.userId]?.email ||
+                            (log.userId === currentUser?.uid ? '(You)' : log.userId)}
+                        </td>
+                        <td className="p-3 text-center">{log.itemType}</td>
+                        <td className="p-3 text-center">
+                          {log.itemType === 'print'
+                            ? log.printType === 'color' ? '🎨 Color' : '🖨️ B/W'
+                            : '—'}
+                        </td>
+                        <td className="p-3 text-center">{log.count}</td>
+                        <td className="p-3 text-right">${log.total?.toFixed(2)}</td>
+                        <td className="p-3 text-right">{log.timestamp?.toDate().toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
           </div>
         </section>
 
@@ -301,9 +304,9 @@ export default function AdminPage() {
         <section>
           
           <h2 className="text-xl font-semibold text-gray-800 mb-4">👥 User Management</h2>
-          <div className="overflow-x-auto">
+          <div className="mt-6 max-h-[600px] overflow-y-auto border border-gray-200 rounded-md shadow-sm">
             <table className="min-w-full text-sm bg-white rounded-lg overflow-hidden">
-              <thead className="bg-blue-50 text-gray-700 text-left">
+            <thead className="sticky top-0 z-10 bg-blue-50 shadow-sm text-gray-700 text-left">
                 <tr>
                   <th className="p-3">User</th>
                   <th className="p-3">Email</th>
@@ -326,7 +329,7 @@ export default function AdminPage() {
                             className="bg-[#FF7300] text-white px-4 py-2 min-w-[125px] rounded-md shadow hover:bg-orange-600 transition text-sm font-medium"
                             onClick={() => handleToggleAdmin(user.uid, !user.isAdmin)}
                           >
-                            {user.isAdmin ? '🔽 Revoke' : '⬆️ Make Admin'}
+                            {user.isAdmin ? '🔽 Revoke Admin' : '⬆️ Make Admin'}
                           </button>
 
                           <button
