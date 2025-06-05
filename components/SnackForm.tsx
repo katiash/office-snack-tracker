@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { collection, addDoc, Timestamp, getDocs } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+
 interface SnackLog {
   userId: string;
-  timestamp: Timestamp; // Replace 'any' with the appropriate type if available
+  timestamp: Timestamp | Date;
   itemType: string;
   printType?: 'bw' | 'color';
   count: number;
@@ -13,27 +16,23 @@ interface SnackLog {
   total: number;
 }
 
-import { collection, addDoc, Timestamp, getDocs } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+interface SnackFormProps {
+  onLogSubmitted?: (newLog: SnackLog) => void;
+}
 
-export default function SnackForm() {
+export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
   const [itemCount, setItemCount] = useState(1);
   const [itemType, setItemType] = useState('snack');
   const [printType, setPrintType] = useState<'bw' | 'color'>('bw');
-  // printType is only relevant if itemType is 'print'
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [userTotalOwed, setUserTotalOwed] = useState<number>(0);
 
-  const unitPrice =
-  itemType === 'print'
-    ? (printType === 'color' ? 0.5 : 0.15)
-    : 2;
+  const unitPrice = itemType === 'print' ? (printType === 'color' ? 0.5 : 0.15) : 2;
   const subtotal = unitPrice * itemCount;
   const adminFee = itemType === 'drink' || itemType === 'snack' ? subtotal * 0.2 : 0;
   const total = subtotal + adminFee;
-
 
   useEffect(() => {
     const fetchUserLogs = async () => {
@@ -46,7 +45,6 @@ export default function SnackForm() {
     fetchUserLogs();
   }, []);
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const user = auth.currentUser;
@@ -57,17 +55,21 @@ export default function SnackForm() {
 
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'snackLogs'), {
+      const newLog: SnackLog = {
         userId: user.uid,
         timestamp: Timestamp.now(),
         itemType,
-        printType: itemType === 'print' ? printType : null, // Only include if itemType is 'print'
+        printType: itemType === 'print' ? printType : undefined,
         count: itemCount,
         description,
         subtotal,
         adminFee,
         total,
-      });
+      };
+
+      await addDoc(collection(db, 'snackLogs'), newLog);
+
+      onLogSubmitted?.({ ...newLog, timestamp: new Date() });
 
       setSuccess(true);
       setItemCount(1);
@@ -86,92 +88,95 @@ export default function SnackForm() {
   };
 
   return (
-   <form
+    <form
       onSubmit={handleSubmit}
-      className="max-w-md mx-auto bg-white p-6 rounded shadow-md space-y-4">
-        <h2 className="text-xl font-semibold mb-2">🍿 Office Snack Tracker</h2>
+      className="max-w-md mx-auto bg-white p-6 rounded shadow-md space-y-4"
+    >
+      <h2 className="text-xl font-semibold mb-2">🍿 Office Snack Tracker</h2>
 
-        <div className="flex items-center gap-2">
-          <label className="w-1/3">Number of Items</label>
-          <div className="flex gap-2 items-center">
-            <button
-              type="button"
-              onClick={() => setItemCount((c) => Math.max(1, c - 1))}
-              className="px-3 py-1 bg-orange-200 rounded"
-            >
-              −
-            </button>
-            <span>{itemCount}</span>
-            <button
-              type="button"
-              onClick={() => setItemCount((c) => c + 1)}
-              className="px-3 py-1 bg-orange-200 rounded"
-            >
-              +
-            </button>
-          </div>
+      <div className="flex items-center gap-2">
+        <label className="w-1/3">Number of Items</label>
+        <div className="flex gap-2 items-center">
+          <button
+            type="button"
+            onClick={() => setItemCount((c) => Math.max(1, c - 1))}
+            className="px-3 py-1 bg-orange-200 rounded"
+          >
+            −
+          </button>
+          <span>{itemCount}</span>
+          <button
+            type="button"
+            onClick={() => setItemCount((c) => c + 1)}
+            className="px-3 py-1 bg-orange-200 rounded"
+          >
+            +
+          </button>
         </div>
+      </div>
 
+      <div>
+        <label className="block mb-1">Item Type</label>
+        <select
+          value={itemType}
+          onChange={(e) => setItemType(e.target.value)}
+          className="w-full border p-2 rounded"
+        >
+          <option value="snack">Snack</option>
+          <option value="drink">Drink</option>
+          <option value="print">Print</option>
+        </select>
+      </div>
+
+      {itemType === 'print' && (
         <div>
-          <label className="block mb-1">Item Type</label>
+          <label className="block mb-1">Print Type</label>
           <select
-            value={itemType}
-            onChange={(e) => setItemType(e.target.value)}
+            value={printType}
+            onChange={(e) => setPrintType(e.target.value as 'bw' | 'color')}
             className="w-full border p-2 rounded"
           >
-            <option value="snack">Snack</option>
-            <option value="drink">Drink</option>
-            <option value="print">Print</option>
+            <option value="bw">Black & White</option>
+            <option value="color">Color</option>
           </select>
         </div>
+      )}
 
-        {itemType === 'print' && (
-          <div>
-            <label className="block mb-1">Print Type</label>
-            <select
-              value={printType}
-              onChange={(e) => setPrintType(e.target.value as 'bw' | 'color')}
-              className="w-full border p-2 rounded"
-            >
-              <option value="bw">Black & White</option>
-              <option value="color">Color</option>
-            </select>
-          </div>
-        )}
+      <div>
+        <label className="block mb-1">Description</label>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="e.g. Sparkling Water, Doritos"
+          className="w-full border p-2 rounded"
+        />
+      </div>
 
-        <div>
-          <label className="block mb-1">Description</label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="e.g. Sparkling Water, Doritos"
-            className="w-full border p-2 rounded" />
-        </div>
+      <div className="text-sm text-gray-600 mt-2">
+        <p>Subtotal: ${subtotal.toFixed(2)}</p>
+        <p>Admin Fee: ${adminFee.toFixed(2)}</p>
+        <p className="font-bold text-black">Total: ${total.toFixed(2)}</p>
+      </div>
 
-        <div className="text-sm text-gray-600 mt-2">
-          <p>Subtotal: ${subtotal.toFixed(2)}</p>
-          <p>Admin Fee: ${adminFee.toFixed(2)}</p>
-          <p className="font-bold text-black">Total: ${total.toFixed(2)}</p>
-        </div>
+      <button
+        type="submit"
+        disabled={submitting}
+        className="w-full py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
+      >
+        {submitting ? 'Logging...' : 'Submit & Log This Item'}
+      </button>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
-        >
-          {submitting ? 'Logging...' : 'Submit & Log This Item'}
-        </button>
+      {success && (
+        <p className="text-green-600 text-sm mt-2">✅ Item logged successfully!</p>
+      )}
 
-        {success && (
-          <p className="text-green-600 text-sm mt-2">✅ Item logged successfully!</p>
-        )}
-        {typeof userTotalOwed === 'number' && (
-          <div className="mt-6 bg-gray-50 border border-gray-200 text-gray-800 px-4 py-3 rounded-lg shadow-sm">
+      {typeof userTotalOwed === 'number' && (
+        <div className="mt-6 bg-gray-50 border border-gray-200 text-gray-800 px-4 py-3 rounded-lg shadow-sm">
           <span className="text-sm">🧾  Current Total Owed </span>
           <div className="text-2xl font-bold mt-1">${userTotalOwed.toFixed(2)}</div>
         </div>
-        )}
-      </form>
+      )}
+    </form>
   );
 }
