@@ -10,7 +10,7 @@ interface SnackLog {
   itemType: string;
   printType?: 'bw' | 'color';
   count: number;
-  description: string;
+  // description: string;
   subtotal: number;
   adminFee: number;
   total: number;
@@ -24,7 +24,7 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
   const [itemCount, setItemCount] = useState(1);
   const [itemType, setItemType] = useState('snack');
   const [printType, setPrintType] = useState<'bw' | 'color'>('bw');
-  const [description, setDescription] = useState('');
+  // const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [, setUserTotalOwed] = useState<number>(0);
@@ -58,7 +58,7 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
       timestamp: Timestamp.now(),
       itemType,
       count: itemCount,
-      description,
+      // description,
       subtotal,
       adminFee,
       total,
@@ -78,7 +78,7 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
       setItemCount(1);
       setItemType('snack');
       setPrintType('bw'); // Reset printType too, just in case
-      setDescription('');
+      // setDescription('');
     } catch (err: unknown) {
       if (err instanceof Error) {
         alert(err.message);
@@ -146,7 +146,7 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
         </div>
       )}
 
-      <div>
+      {/* <div>
         <label className="block mb-1">Description</label>
         <input
           type="text"
@@ -155,7 +155,7 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
           placeholder="e.g. Sparkling Water, Doritos"
           className="w-full border p-2 rounded"
         />
-      </div>
+      </div> */}
 
       <div className="text-sm text-gray-600 mt-2">
         <p>Subtotal: ${subtotal.toFixed(2)}</p>
@@ -174,16 +174,6 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
       {success && (
         <p className="text-green-600 text-sm mt-2">✅ Item logged successfully!</p>
       )}
-
-{/* If you still want the total to appear within SnackForm.tsx for design reasons:
-Pass userTotalOwed as a prop from page.tsx down to SnackForm, and use it purely for display.
- */}
-      {/* {typeof userTotalOwed === 'number' && (
-        <div className="mt-6 bg-gray-50 border border-gray-200 text-gray-800 px-4 py-3 rounded-lg shadow-sm">
-          <span className="text-sm">🧾  Current Total Owed </span>
-          <div className="text-2xl font-bold mt-1">${userTotalOwed.toFixed(2)}</div>
-        </div>
-      )} */}
     </form>
   );
 }

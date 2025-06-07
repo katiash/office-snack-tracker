@@ -26,7 +26,7 @@ type SnackLog = {
   itemType: string;
   printType?: 'bw' | 'color' | null;
   count: number;
-  description: string;
+  // description: string;
   subtotal: number;
   adminFee: number;
   total: number;
