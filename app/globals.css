@@ -10,6 +10,10 @@ body {
   background-color: #f9f9f6; /* Very light neutral beige */
   color: #2c2c2c;
 }
+/* Raise z-index for react-datepicker dropdown */
+.react-datepicker-popper {
+  z-index: 50 !important; /* or even 60+ if needed */
+}
 /* body {
   @apply bg-oeBg text-oeGray font-sans;
 } */

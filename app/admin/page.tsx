@@ -9,6 +9,7 @@ import { utils as XLSXUtils, writeFile } from 'xlsx';
 import { Timestamp } from 'firebase/firestore';
 import DatePicker from 'react-datepicker';
 import ProfileModal from '@/components/ProfileModal';
+import { convertLogsToCSV } from '@/lib/exportToCSV';
 
 type UserMeta = {
   uid: string;
@@ -21,9 +22,13 @@ type UserMeta = {
 
 type SnackLog = {
   userId: string;
-  itemType: string;
-  count: number;
   timestamp: Timestamp;
+  itemType: string;
+  printType?: 'bw' | 'color' | null;
+  count: number;
+  description: string;
+  subtotal: number;
+  adminFee: number;
   total: number;
 };
 
@@ -34,6 +39,7 @@ export default function AdminPage() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const currentUser = auth.currentUser;
   const currentMeta = currentUser ? userMap[currentUser.uid] : undefined;
@@ -125,10 +131,23 @@ export default function AdminPage() {
     if (!logDate) return false;
     if (startDate && logDate < startDate) return false;
     if (endDate && logDate > endDate) return false;
+    if (selectedUserId && log.userId !== selectedUserId) return false;
     return true;
   });
 
   const handleExportCSV = () => {
+    const csv = convertLogsToCSV(filteredLogs, userMap);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `snack-logs-${dateStr}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportXLSX = () => {
     const csvData = filteredLogs.map((log) => ({
       Date: log.timestamp?.toDate().toLocaleDateString() || '',
       Email: userMap[log.userId]?.email || '',
@@ -178,6 +197,24 @@ export default function AdminPage() {
         <section>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📦 Snack Logs</h2>
 
+          {/* 👤 Filter by User */}
+          <div className="mb-6">
+            <label className="block text-sm text-gray-600 mb-1">Filter by User</label>
+            <select
+              value={selectedUserId || ''}
+              onChange={(e) => setSelectedUserId(e.target.value || null)}
+              className="border border-gray-300 p-2 rounded-md w-full max-w-sm"
+            >
+              <option value="">All Users</option>
+              {Object.values(userMap).map((user) => (
+                <option key={user.uid} value={user.uid}>
+                  {user.firstName} {user.lastName} ({user.email})
+                </option>
+              ))}
+          </select>
+        </div>
+          
+          {/* 📅 Date Pickers */}
           <div className="flex flex-wrap gap-6 mb-4">
             <div>
               <label className="text-sm text-gray-600 block mb-1">Start Date</label>
@@ -197,50 +234,79 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleExportCSV}
-            className="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 transition"
-          >
-            ⬇️ Export CSV
-          </button>
+          <div className="flex flex-wrap gap-3 mt-6">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 bg-[#799c75] text-white px-5 py-2 rounded-lg shadow-sm hover:bg-[#6a8c65] transition-all"
+            >
+              📥 Export CSV
+              <span className="text-xs opacity-80">(csv)</span>
+            </button>
 
-          <div className="overflow-x-auto mt-6">
-            <table className="min-w-full text-sm bg-white rounded-lg overflow-hidden">
-              <thead className="bg-gray-50 text-gray-700 text-left">
-                <tr>
-                  <th className="p-3">User</th>
-                  <th className="p-3">Item</th>
-                  <th className="p-3 text-center">Count</th>
-                  <th className="p-3 text-right">Total</th>
-                  <th className="p-3 text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLogs.map((log, i) => (
-                  <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      {userMap[log.userId]?.company ||
-                        `${userMap[log.userId]?.firstName || ''} ${userMap[log.userId]?.lastName || ''}`.trim() ||
-                        userMap[log.userId]?.email ||
-                        (log.userId === currentUser?.uid ? '(You)' : log.userId)}
-                    </td>
-                    <td className="p-3">{log.itemType}</td>
-                    <td className="p-3 text-center">{log.count}</td>
-                    <td className="p-3 text-right">${log.total?.toFixed(2)}</td>
-                    <td className="p-3 text-right">{log.timestamp?.toDate().toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <button
+              onClick={handleExportXLSX}
+              className="flex items-center gap-2 bg-[#799c75] text-white px-5 py-2 rounded-lg shadow-sm hover:bg-[#6a8c65] transition-all"
+            >
+              📊 Export Excel
+              <span className="text-xs opacity-80">(xlsx)</span>
+            </button>
+          </div>
+           {/* 💵 Selected user summary */}
+          {selectedUserId && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg shadow-sm mb-4">
+              <span className="text-sm">🧾 Total for selected user in this date range:</span>
+              <div className="text-2xl font-bold mt-1">
+                ${filteredLogs.reduce((sum, log) => sum + (log.total || 0), 0).toFixed(2)}
+              </div>
+            </div>
+          )}
+
+            <div className="mt-6 rounded-md border border-gray-200 shadow-sm overflow-x-auto">
+            <div className="max-h-[600px] overflow-y-auto">
+              <table className="min-w-full text-sm bg-white">
+                  <thead>
+                    <tr>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-left w-40 max-w-[10rem]">User</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Item Type</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Print Type</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Count</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-right">Total</th>
+                      <th className="p-3 sticky top-0 z-10 bg-white text-right">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.map((log, i) => (
+                      <tr key={i} className="border-b hover:bg-gray-50">
+                       <td className="p-3 text-left w-40 max-w-[10rem] whitespace-normal break-words">
+                          {userMap[log.userId]?.company ||
+                            `${userMap[log.userId]?.firstName || ''} ${userMap[log.userId]?.lastName || ''}`.trim() ||
+                            userMap[log.userId]?.email ||
+                            (log.userId === currentUser?.uid ? '(You)' : log.userId)}
+                        </td>
+                        <td className="p-3 text-center">{log.itemType}</td>
+                        <td className="p-3 text-center">
+                          {log.itemType === 'print'
+                            ? log.printType === 'color' ? '🎨 Color' : '🖨️ B/W'
+                            : '—'}
+                        </td>
+                        <td className="p-3 text-center">{log.count}</td>
+                        <td className="p-3 text-right">${log.total?.toFixed(2)}</td>
+                        <td className="p-3 text-right">{log.timestamp?.toDate().toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
           </div>
         </section>
 
         {/* User Management */}
         <section>
+          
           <h2 className="text-xl font-semibold text-gray-800 mb-4">👥 User Management</h2>
-          <div className="overflow-x-auto">
+          <div className="mt-6 max-h-[600px] overflow-y-auto border border-gray-200 rounded-md shadow-sm">
             <table className="min-w-full text-sm bg-white rounded-lg overflow-hidden">
-              <thead className="bg-blue-50 text-gray-700 text-left">
+            <thead className="sticky top-0 z-10 bg-blue-50 shadow-sm text-gray-700 text-left">
                 <tr>
                   <th className="p-3">User</th>
                   <th className="p-3">Email</th>
@@ -263,7 +329,7 @@ export default function AdminPage() {
                             className="bg-[#FF7300] text-white px-4 py-2 min-w-[125px] rounded-md shadow hover:bg-orange-600 transition text-sm font-medium"
                             onClick={() => handleToggleAdmin(user.uid, !user.isAdmin)}
                           >
-                            {user.isAdmin ? '🔽 Revoke' : '⬆️ Make Admin'}
+                            {user.isAdmin ? '🔽 Revoke Admin' : '⬆️ Make Admin'}
                           </button>
 
                           <button

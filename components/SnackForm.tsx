@@ -1,20 +1,49 @@
 'use client';
 
-import { useState } from 'react';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { collection, addDoc, Timestamp, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
-export default function SnackForm() {
+interface SnackLog {
+  userId: string;
+  timestamp: Timestamp | Date;
+  itemType: string;
+  printType?: 'bw' | 'color';
+  count: number;
+  description: string;
+  subtotal: number;
+  adminFee: number;
+  total: number;
+}
+
+interface SnackFormProps {
+  onLogSubmitted?: (newLog: SnackLog) => void;
+}
+
+export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
   const [itemCount, setItemCount] = useState(1);
   const [itemType, setItemType] = useState('snack');
+  const [printType, setPrintType] = useState<'bw' | 'color'>('bw');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [, setUserTotalOwed] = useState<number>(0);
 
-  const unitPrice = 2;
+  const unitPrice = itemType === 'print' ? (printType === 'color' ? 0.5 : 0.15) : 2;
   const subtotal = unitPrice * itemCount;
-  const adminFee = itemType === 'print' ? subtotal * 0.2 : 0;
+  const adminFee = itemType === 'drink' || itemType === 'snack' ? subtotal * 0.2 : 0;
   const total = subtotal + adminFee;
+
+  useEffect(() => {
+    const fetchUserLogs = async () => {
+      const snap = await getDocs(collection(db, 'snackLogs'));
+      const logs = snap.docs.map((doc) => doc.data()) as SnackLog[];
+      const userLogs = logs.filter(log => log.userId === auth.currentUser?.uid);
+      const totalSum = userLogs.reduce((sum, log) => sum + (log.total || 0), 0);
+      setUserTotalOwed(totalSum);
+    };
+    fetchUserLogs();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,23 +52,32 @@ export default function SnackForm() {
       alert('You must be logged in to submit.');
       return;
     }
-
+  
+    const newLog: SnackLog = {
+      userId: user.uid,
+      timestamp: Timestamp.now(),
+      itemType,
+      count: itemCount,
+      description,
+      subtotal,
+      adminFee,
+      total,
+      ...(itemType === 'print' && { printType }), // ✅ only include if relevant
+    };
+  
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'snackLogs'), {
-        userId: user.uid,
-        timestamp: Timestamp.now(),
-        itemType,
-        count: itemCount,
-        description,
-        subtotal,
-        adminFee,
-        total,
-      });
-
+      await addDoc(collection(db, 'snackLogs'), newLog);
+  
+      // Notify parent or optimistically update if onLogSubmitted is passed
+      if (typeof onLogSubmitted === 'function') {
+        onLogSubmitted(newLog);
+      }
+  
       setSuccess(true);
       setItemCount(1);
       setItemType('snack');
+      setPrintType('bw'); // Reset printType too, just in case
       setDescription('');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -94,6 +132,20 @@ export default function SnackForm() {
         </select>
       </div>
 
+      {itemType === 'print' && (
+        <div>
+          <label className="block mb-1">Print Type</label>
+          <select
+            value={printType}
+            onChange={(e) => setPrintType(e.target.value as 'bw' | 'color')}
+            className="w-full border p-2 rounded"
+          >
+            <option value="bw">Black & White</option>
+            <option value="color">Color</option>
+          </select>
+        </div>
+      )}
+
       <div>
         <label className="block mb-1">Description</label>
         <input
@@ -122,6 +174,16 @@ export default function SnackForm() {
       {success && (
         <p className="text-green-600 text-sm mt-2">✅ Item logged successfully!</p>
       )}
+
+{/* If you still want the total to appear within SnackForm.tsx for design reasons:
+Pass userTotalOwed as a prop from page.tsx down to SnackForm, and use it purely for display.
+ */}
+      {/* {typeof userTotalOwed === 'number' && (
+        <div className="mt-6 bg-gray-50 border border-gray-200 text-gray-800 px-4 py-3 rounded-lg shadow-sm">
+          <span className="text-sm">🧾  Current Total Owed </span>
+          <div className="text-2xl font-bold mt-1">${userTotalOwed.toFixed(2)}</div>
+        </div>
+      )} */}
     </form>
   );
 }
