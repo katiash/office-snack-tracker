@@ -76,7 +76,7 @@ export default function YourSnackSummary() {
   
       {/* Snacks + Drinks */}
       <div className="mb-6 bg-orange-50 border-l-4 border-orange-300 p-4 rounded-md">
-        <h3 className="text-md font-semibold text-orange-600 mb-2"> 🥤🍩🖨️ Snack & Print/Copy Tracker </h3>
+        <h3 className="text-md font-semibold text-orange-600 mb-2">🥤 Snacks & Drinks</h3>
         <p className="text-sm">• Items: <span className="font-medium">{snackDrinkCount}</span></p>
         <p className="text-sm">
           • Total:{' '}
