@@ -39,13 +39,17 @@ export default function LoginPage() {
             lastName: data.lastName,
             company: data.company,
           });
-          map[doc.id] = data.email;
+          // Build a map of UID → email (for login resolution)
+          // Used in case a user selects their name from dropdown.
+          // Firebase Auth requires email to log in, so we resolve it from UID.
+          map[doc.id] = data.email ?? `${data.firstName} ${data.lastName}`;
         });
 
         setUsers(userList);
         setEmailMap(map);
       } catch (err) {
         console.error('🔥 Error fetching users:', err);
+        alert('Error loading user list. Please refresh.');
       }
     };
 

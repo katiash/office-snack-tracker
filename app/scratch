@@ -1,0 +1,20 @@
+✅ What You Need to Do
+Yes — you must re-run the script setAdmin.ts (or hit your /api/set-admin.ts endpoint) for any user whose claim is incorrect or missing.
+This is a manual way — great if you're doing local cleanup.
+
+In your case:
+await admin.auth().setCustomUserClaims('<asgonorata27 TKfZGAmTwAhytyqBHnSMLnZfyqu1>', { admin: false });
+
+But note: this does not automatically update Firestore unless you explicitly write:
+await firestore().collection('users').doc('<TKfZGAmTwAhytyqBHnSMLnZfyqu1>').update({ isAdmin: false });
+
+
+Option B:
+
+curl -X POST http://localhost:3000/api/set-admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uid": "<asgonorata27 TKfZGAmTwAhytyqBHnSMLnZfyqu1>",
+    "requesterUid": "<ekaterina HQPf9O8aARWoTOxoK4d61dZq34h1>",
+    "action": "revoke"
+  }'

@@ -23,13 +23,17 @@ export default function SignupPage() {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const uid = result.user.uid;
 
-      await setDoc(doc(db, 'users', uid), {
-        firstName,
-        lastName,
-        company,
-        email,
-        createdAt: new Date(),
-      });
+      try{
+        await setDoc(doc(db, 'users', uid), {
+          firstName,
+          lastName,
+          company,
+          email,
+          createdAt: new Date(),
+        });
+      } catch (error) {
+        console.error('🔥 Error writing Firestore user doc:', error);
+      }
 
       router.push('/');
     } catch (err: unknown) {
