@@ -14,8 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Snacks & Prints Tracker",
-  description: "Office Snacks, Drinks, Copy & Prints Tracking App",
+  title: "Snack/Drink and Copy/Print Tracker",
+  description: "Track office snacks, drinks, and copy/print usage in one clean interface.",
+  icons: {
+    icon: '/favicon.png',
+  }
 };
 
 export default function RootLayout({ children, }: Readonly<{ children: React.ReactNode;}>) 
