@@ -94,9 +94,9 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-md mx-auto bg-white p-6 rounded shadow-md space-y-4"
+      className="max-w-md mx-auto bg-white p-6 rounded shadow-md space-y-4 w-full"
     >
-      <h2 className="text-xl font-semibold mb-2">🥤🍩🖨️ Snack & Print Tracker</h2>
+      <h2 className="text-xl font-semibold mb-2"> 🍿 + 🖨️ Snacks & Prints Tracker</h2>
 
       <div className="flex items-center gap-2">
         <label className="w-1/3">Number of Items</label>
@@ -145,17 +145,6 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
           </select>
         </div>
       )}
-
-      {/* <div>
-        <label className="block mb-1">Description</label>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="e.g. Sparkling Water, Doritos"
-          className="w-full border p-2 rounded"
-        />
-      </div> */}
 
       <div className="text-sm text-gray-600 mt-2">
         <p>Subtotal: ${subtotal.toFixed(2)}</p>

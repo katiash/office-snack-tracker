@@ -32,42 +32,53 @@ export default function ProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-lg font-bold mb-4">Edit Your Profile</h2>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">👤 Edit Your Profile</h2>
 
-        <label className="block mb-2 text-sm">First Name</label>
-        <input
-          type="text"
-          className="w-full border px-2 py-1 mb-4 rounded"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-        />
+        <div className="space-y-4 text-sm">
+          <div>
+            <label className="block mb-1 text-gray-600">First Name</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+          </div>
 
-        <label className="block mb-2 text-sm">Last Name</label>
-        <input
-          type="text"
-          className="w-full border px-2 py-1 mb-4 rounded"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-        />
+          <div>
+            <label className="block mb-1 text-gray-600">Last Name</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
 
-        <label className="block mb-2 text-sm">Company (optional)</label>
-        <input
-          type="text"
-          className="w-full border px-2 py-1 mb-4 rounded"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-        />
+          <div>
+            <label className="block mb-1 text-gray-600">Company (optional)</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+          </div>
+        </div>
 
-        <div className="flex justify-end space-x-3 mt-4">
-          <button onClick={onClose} className="text-sm px-3 py-1 border rounded">
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="text-sm px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          >
             Cancel
           </button>
           <button
             disabled={saving}
             onClick={handleSave}
-            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            className="text-sm px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition font-medium disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>

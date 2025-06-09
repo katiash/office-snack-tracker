@@ -1,19 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "react-datepicker/dist/react-datepicker.css";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import "react-datepicker/dist/react-datepicker.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg-base: #f9f9f6;         /* soft beige */
+  --text-base: #2c2c2c;       /* clean dark */
+  --accent-orange: #ff7300;   /* highlight tone */
+  --neutral-light: #f5f5f5;
+  --neutral-border: #e2e2e2;
+  --radius-lg: 0.75rem;
+}
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f9f9f6; /* Very light neutral beige */
-  color: #2c2c2c;
+  background-color: var(--bg-base);
+  color: var(--text-base);
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  line-height: 1.6;
 }
-/* Raise z-index for react-datepicker dropdown */
+
+/* Raise z-index for date picker dropdown */
 .react-datepicker-popper {
-  z-index: 50 !important; /* or even 60+ if needed */
+  z-index: 60 !important;
 }
-/* body {
-  @apply bg-oeBg text-oeGray font-sans;
-} */
+
+/* Optional overrides */
+input,
+select,
+textarea {
+  @apply text-sm border border-gray-300 px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-orange-400;
+}
+
+button {
+  @apply text-sm rounded-lg transition;
+}

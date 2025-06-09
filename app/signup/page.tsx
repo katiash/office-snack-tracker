@@ -32,9 +32,8 @@ export default function SignupPage() {
           createdAt: new Date(),
         });
       } catch (error) {
-        console.error('🔥 Error writing Firestore user doc:', error);
-      }
-
+      console.error('🔥 Error writing Firestore user doc:', error);
+    }
       router.push('/');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -43,7 +42,7 @@ export default function SignupPage() {
         console.error('Unexpected signup error:', err);
         alert('Something went wrong during signup.');
       }
-    }finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -51,16 +50,16 @@ export default function SignupPage() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-md mx-auto bg-white p-6 mt-10 rounded shadow space-y-4"
+      className="max-w-md mx-auto bg-white border border-gray-200 p-6 mt-10 rounded-xl shadow-md space-y-5"
     >
-      <h2 className="text-2xl font-bold">Create Your Account</h2>
+      <h2 className="text-2xl font-bold text-orange-600 text-center">Create Your Account</h2>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <input
           required
           type="text"
           placeholder="First Name"
-          className="w-1/2 border p-2 rounded"
+          className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
         />
@@ -68,7 +67,7 @@ export default function SignupPage() {
           required
           type="text"
           placeholder="Last Name"
-          className="w-1/2 border p-2 rounded"
+          className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
         />
@@ -77,7 +76,7 @@ export default function SignupPage() {
       <input
         type="text"
         placeholder="Company (optional)"
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
         value={company}
         onChange={(e) => setCompany(e.target.value)}
       />
@@ -86,15 +85,16 @@ export default function SignupPage() {
         required
         type="email"
         placeholder="Email"
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
+
       <input
         required
         type="password"
         placeholder="Password"
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
@@ -102,7 +102,7 @@ export default function SignupPage() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
+        className="w-full py-2 bg-orange-500 text-white rounded font-semibold hover:bg-orange-600 disabled:opacity-50"
       >
         {loading ? 'Creating account...' : 'Sign Up'}
       </button>

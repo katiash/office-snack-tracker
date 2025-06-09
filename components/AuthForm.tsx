@@ -41,7 +41,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-brand-light text-brand-dark rounded shadow space-y-4">
+    <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto mt-10 p-8 bg-oeBg text-brand-dark rounded-xl shadow space-y-4">
       <h1 className="text-2xl font-bold text-center">
         {mode === 'login' ? 'Log In' : 'Sign Up'}
       </h1>
@@ -54,7 +54,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
         required
-        className="w-full p-2 border rounded"
+        className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
       />
       <input
         type="password"
@@ -62,7 +62,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
         required
-        className="w-full p-2 border rounded"
+        className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
       />
       <button
         type="submit"
