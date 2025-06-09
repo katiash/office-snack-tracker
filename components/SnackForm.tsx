@@ -96,7 +96,7 @@ export default function SnackForm({ onLogSubmitted }: SnackFormProps) {
       onSubmit={handleSubmit}
       className="max-w-md mx-auto bg-white p-6 rounded shadow-md space-y-4 w-full"
     >
-      <h2 className="text-xl font-semibold mb-2">🥤🍩🖨️ Snack & Print Tracker</h2>
+      <h2 className="text-xl font-semibold mb-2"> 🍿 + 🖨️ Snacks & Prints Tracker</h2>
 
       <div className="flex items-center gap-2">
         <label className="w-1/3">Number of Items</label>
