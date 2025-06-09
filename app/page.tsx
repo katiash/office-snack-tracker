@@ -21,7 +21,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-orange-50 py-10">
+    <main className="min-h-screen bg-orange-50 py-10 px-4 sm:px-6 md:px-8">
       <AuthGuard>
       <div className="max-w-md mx-auto space-y-6">
         <SnackForm

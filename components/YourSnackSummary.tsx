@@ -1,11 +1,9 @@
-// YourSnackSummary.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Timestamp } from 'firebase/firestore';
-
 interface SnackLog {
   userId: string;
   timestamp: Timestamp;
@@ -69,39 +67,36 @@ export default function YourSnackSummary() {
   if (loading) return <p className="text-gray-500">Loading summary...</p>;
 
   return (
-    <div className="bg-white border border-orange-200 p-5 rounded-xl shadow-md text-gray-800 max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-orange-700 mb-4 flex items-center gap-2">
-        🧾 <span>Your Snack & Print Log</span>
-      </h2>
-  
-      {/* Snacks + Drinks */}
-      <div className="mb-6 bg-orange-50 border-l-4 border-orange-300 p-4 rounded-md">
-        <h3 className="text-md font-semibold text-orange-600 mb-2">🥤 Snacks & Drinks</h3>
-        <p className="text-sm">• Items: <span className="font-medium">{snackDrinkCount}</span></p>
-        <p className="text-sm">
-          • Total:{' '}
-          <span className="font-semibold">
-            ${snackDrinkTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </span>
-        </p>
-      </div>
-  
-      {/* Copy / Print */}
-      <div className="bg-orange-50 border-l-4 border-orange-300 p-4 rounded-md">
-        <h3 className="text-md font-semibold text-orange-600 mb-2">🖨️ Copy / Print</h3>
-        <p className="text-sm">
-          • Items:{' '}
-          <span className="font-medium">
-            {printCount} ({bwCount} Black & White, {colorCount} Color)
-          </span>
-        </p>
-        <p className="text-sm">
-          • Total:{' '}
-          <span className="font-semibold">
-            ${printTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </span>
-        </p>
-      </div>
+    <div className="bg-white border border-orange-200 p-6 rounded-xl shadow-md text-gray-800 max-w-md mx-auto mt-6">
+      <h2 className="text-xl font-bold text-orange-500 mb-4 tracking-wide">🧾 Your Activity Summary</h2>
+
+      <section className="mb-5">
+        <h3 className="text-lg font-semibold text-gray-700 mb-1">🥤 Snacks + Drinks</h3>
+        <ul className="text-sm space-y-1">
+          <li>• Items: {snackDrinkCount}</li>
+          <li>
+            • Total:{' '}
+            <strong>
+              ${snackDrinkTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </strong>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3 className="text-lg font-semibold text-gray-700 mb-1">🖨️ Copy/Print</h3>
+        <ul className="text-sm space-y-1">
+          <li>
+            • Items: {printCount} ({bwCount} Black & White, {colorCount} Color)
+          </li>
+          <li>
+            • Total:{' '}
+            <strong>
+              ${printTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </strong>
+          </li>
+        </ul>
+      </section>
     </div>
   );
 }
