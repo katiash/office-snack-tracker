@@ -18,8 +18,13 @@ export const metadata: Metadata = {
   description:
     'Track office snacks, drinks, and copy/print usage in one clean interface.',
   icons: {
-    icon: '/favicon.png',
-  },
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+    },
+    manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
