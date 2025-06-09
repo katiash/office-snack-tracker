@@ -39,9 +39,9 @@ export default function LoginPage() {
             lastName: data.lastName,
             company: data.company,
           });
-          // Build a map of UID → email (for login resolution)
-          // Used in case a user selects their name from dropdown.
-          // Firebase Auth requires email to log in, so we resolve it from UID.
+      // Build a map of UID → email (for login resolution)
+      // Used in case a user selects their name from dropdown.
+      // Firebase Auth requires email to log in, so we resolve it from UID.          
           map[doc.id] = data.email ?? `${data.firstName} ${data.lastName}`;
         });
 
@@ -83,18 +83,19 @@ export default function LoginPage() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-md mx-auto bg-white p-6 mt-10 rounded shadow space-y-4"
+      className="max-w-md mx-auto bg-white p-6 mt-12 rounded-xl shadow-md space-y-5 border border-gray-100"
     >
-      <h2 className="text-2xl font-bold mb-4">Log In</h2>
+      <h2 className="text-2xl font-bold text-oeGray text-center">Welcome Back 👋</h2>
 
       <label className="block text-sm font-medium text-gray-700">
-        Select your name or company <span className="text-gray-500">(or enter email)</span>
+        Select your name or company{' '}
+        <span className="text-gray-500">(or enter email)</span>
       </label>
 
       <select
         value={selectedUid}
         onChange={(e) => setSelectedUid(e.target.value)}
-        className="w-full border p-2 rounded"
+        className="w-full border p-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400"
       >
         <option value="">-- Select User --</option>
         {users.map((user) => (
@@ -114,7 +115,7 @@ export default function LoginPage() {
           setTypedEmail(e.target.value);
           setSelectedUid(''); // Clear dropdown selection
         }}
-        className="w-full border p-2 rounded"
+        className="w-full border p-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400"
       />
 
       <input
@@ -123,13 +124,13 @@ export default function LoginPage() {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full border p-2 rounded"
+        className="w-full border p-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400"
       />
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
+        className="w-full py-2 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 disabled:opacity-50"
       >
         {loading ? 'Logging in...' : 'Log In'}
       </button>
