@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
-// 🔥 Parse and initialize Firebase Admin
+// 🔥 Initialize Firebase Admin
 if (!admin.apps.length) {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT!;
   const parsed = JSON.parse(raw);
@@ -20,26 +20,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const requester = await admin.auth().getUser(requesterUid);
-    const isRequesterAdmin = requester.customClaims?.admin === true;
+    const claims = requester.customClaims || {};
+
+    console.log('🔍 Requester UID:', requesterUid);
+    console.log('🔍 Requester email:', requester.email);
+    console.log('🧾 Custom Claims:', claims);
+
+    const isRequesterAdmin = claims.isAdmin === true;
 
     if (!isRequesterAdmin) {
+      console.warn('⛔ Request blocked: requester is not an admin');
       return res.status(403).json({ error: 'Only admins can set admin claims.' });
     }
+
     console.log('📩 Incoming body:', req.body);
-    console.log('🔍 Requester:', requester.email, 'isAdmin:', isRequesterAdmin);
 
-    // ✅ Set custom claims
+    // ✅ Set the new user's custom claim
     await admin.auth().setCustomUserClaims(uid, {
-      isAdmin: action === 'promote' });
+      isAdmin: action === 'promote',
+    });
 
-    //🔥 New: Sync to Firestore user document
+    // 🔥 Sync to Firestore document
     const db = getFirestore();
     console.log(`🔥 Updating Firestore: /users/${uid} → isAdmin: ${action === 'promote'}`);
     await db.collection('users').doc(uid).update({
-      isAdmin: action === 'promote'
+      isAdmin: action === 'promote',
     });
+
     console.log('✅ Firestore updated successfully');
     return res.status(200).json({ success: true });
+
   } catch (error) {
     const err = error as Error;
     console.error('❌ Firestore update failed:', err);

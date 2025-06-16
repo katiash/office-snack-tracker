@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Timestamp } from 'firebase/firestore';
+
 interface SnackLog {
   userId: string;
   timestamp: Timestamp;
@@ -15,10 +16,11 @@ interface SnackLog {
   total: number;
 }
 
-export default function YourSnackSummary() {
+export default function YourSnackSummary({ refreshTrigger }: { refreshTrigger: boolean }) {
   const [loading, setLoading] = useState(true);
   const [snackDrinkCount, setSnackDrinkCount] = useState(0);
   const [snackDrinkTotal, setSnackDrinkTotal] = useState(0);
+  const [adminFeeTotal, setAdminFeeTotal] = useState(0);
   const [printCount, setPrintCount] = useState(0);
   const [printTotal, setPrintTotal] = useState(0);
   const [bwCount, setBwCount] = useState(0);
@@ -28,6 +30,8 @@ export default function YourSnackSummary() {
     const fetchLogs = async () => {
       const user = auth.currentUser;
       if (!user) return;
+      setLoading(true);
+
       const snap = await getDocs(collection(db, 'snackLogs'));
       const logs = snap.docs
         .map((doc) => doc.data())
@@ -39,11 +43,13 @@ export default function YourSnackSummary() {
       let printItemCount = 0;
       let blackWhite = 0;
       let color = 0;
+      let adminTotal = 0;
 
       for (const log of logs) {
         if (log.itemType === 'snack' || log.itemType === 'drink') {
           snackDrinkTotalSum += log.total;
           snackDrinkItemCount += log.count;
+          adminTotal += log.adminFee ?? 0;
         } else if (log.itemType === 'print') {
           printTotalSum += log.total;
           printItemCount += log.count;
@@ -58,22 +64,32 @@ export default function YourSnackSummary() {
       setPrintCount(printItemCount);
       setBwCount(blackWhite);
       setColorCount(color);
+      setAdminFeeTotal(adminTotal);
       setLoading(false);
     };
 
     fetchLogs();
-  }, []);
+  }, [refreshTrigger]);
 
   if (loading) return <p className="text-gray-500">Loading summary...</p>;
+
+  const grandTotal = snackDrinkTotal + printTotal;
 
   return (
     <div className="bg-white border border-orange-200 p-6 rounded-xl shadow-md text-gray-800 max-w-md mx-auto mt-6">
       <h2 className="text-xl font-bold text-orange-500 mb-4 tracking-wide">🧾 Your Activity Summary</h2>
 
       <section className="mb-5">
-        <h3 className="text-lg font-semibold text-gray-700 mb-1">🥤 Snacks + Drinks</h3>
+        <h3 className="text-[#FF7300] font-semibold">🥤 Snacks + Drinks</h3>
         <ul className="text-sm space-y-1">
           <li>• Items: {snackDrinkCount}</li>
+          <li>
+            • Admin Fee:{' '}
+            <strong>
+              ${adminFeeTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </strong>{' '}
+            <span className="text-xs text-gray-500">(20% included in total)</span>
+          </li>
           <li>
             • Total:{' '}
             <strong>
@@ -84,7 +100,7 @@ export default function YourSnackSummary() {
       </section>
 
       <section>
-        <h3 className="text-lg font-semibold text-gray-700 mb-1">🖨️ Copy/Print</h3>
+        <h3 className="text-[#FF7300] font-semibold">🖨️ Copies + Prints</h3>
         <ul className="text-sm space-y-1">
           <li>
             • Items: {printCount} ({bwCount} Black & White, {colorCount} Color)
@@ -97,10 +113,13 @@ export default function YourSnackSummary() {
           </li>
         </ul>
       </section>
+
+      <div className="mt-5 pt-3 border-t text-sm text-gray-700">
+        <strong className="text-orange-600">Grand Total:</strong>{' '}
+        <span className="font-semibold">
+          ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        </span>
+      </div>
     </div>
   );
 }
-// This component fetches the user's snack and print logs from Firestore
-// and displays a summary of their snack and print activity.
-// It shows the total number of items and the total cost for snacks/drinks
-// and prints, including a breakdown of black & white vs color prints.

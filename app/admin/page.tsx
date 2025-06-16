@@ -1,15 +1,16 @@
 'use client';
-
+import { useAuditPrintTypeValues } from '../../hooks/useAuditPrintTypeValues';
+// import { fixPrintTypeValues } from '../../hooks/fixPrintTypes';
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
-import { utils as XLSXUtils, writeFile } from 'xlsx';
 import { Timestamp } from 'firebase/firestore';
 import DatePicker from 'react-datepicker';
 import ProfileModal from '@/components/ProfileModal';
 import { convertLogsToCSV } from '@/lib/exportToCSV';
+
 
 type UserMeta = {
   uid: string;
@@ -26,7 +27,6 @@ type SnackLog = {
   itemType: string;
   printType?: 'bw' | 'color' | null;
   count: number;
-  // description: string;
   subtotal: number;
   adminFee: number;
   total: number;
@@ -38,12 +38,17 @@ export default function AdminPage() {
   const [logs, setLogs] = useState<SnackLog[]>([]);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [selectedItemTypes, setSelectedItemTypes] = useState<string[]>(['snack', 'drink', 'print']);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
 
   const currentUser = auth.currentUser;
   const currentMeta = currentUser ? userMap[currentUser.uid] : undefined;
   const isProfileIncomplete = currentMeta && (!currentMeta.firstName || !currentMeta.lastName);
+  const [groupBy] = useState<'none' | 'user' | 'date' | 'itemType'>('none');
+  const [sortConfig, setSortConfig] = useState<{ key: keyof SnackLog | 'date'; direction: 'asc' | 'desc' } | null>(null);
+  useAuditPrintTypeValues(); 
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -65,6 +70,8 @@ export default function AdminPage() {
     fetchUsers();
   }, []);
 
+
+  
   useEffect(() => {
     const fetchLogs = async () => {
       try {
@@ -77,6 +84,11 @@ export default function AdminPage() {
     };
     fetchLogs();
   }, []);
+
+  // useEffect(() => {
+  //   // ✅ TEMP: Run once to fix dirty printType values
+  //   fixPrintTypeValues();
+  // }, []);
 
   const handleToggleAdmin = async (uid: string, makeAdmin: boolean) => {
     if (!auth.currentUser) return;
@@ -132,8 +144,63 @@ export default function AdminPage() {
     if (startDate && logDate < startDate) return false;
     if (endDate && logDate > endDate) return false;
     if (selectedUserId && log.userId !== selectedUserId) return false;
+    if (!selectedItemTypes.includes(log.itemType)) return false;
     return true;
   });
+
+  const adminFeeTotal = filteredLogs.reduce((sum, log) => sum + (log.adminFee || 0), 0);
+  const sortLogs = (logs: SnackLog[]) => {
+    if (!sortConfig) return logs;
+  
+    const { key, direction } = sortConfig;
+  
+    return [...logs].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+  
+      if (key === 'date') {
+        aVal = a.timestamp?.toDate()?.getTime() || 0;
+        bVal = b.timestamp?.toDate()?.getTime() || 0;
+      } else if (key === 'printType') {
+        const normalize = (val: string | null | undefined): number => {
+          if (val?.toLowerCase?.() === 'bw') return 1;
+          if (val?.toLowerCase?.() === 'color') return 2;
+          return 3;
+        };
+      
+        aVal = normalize(a.printType);
+        bVal = normalize(b.printType);
+      } else {
+        aVal = a[key];
+        bVal = b[key];
+        // console.log('Sorting printType → A:', a.printType, 'B:', b.printType);
+      }
+  
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+  
+  const groupLogs = (logs: SnackLog[]) => {
+    if (groupBy === 'none') return { 'All Logs': logs };
+    return logs.reduce<Record<string, SnackLog[]>>((acc, log) => {
+      let key = '';
+      if (groupBy === 'user') {
+        const user = userMap[log.userId];
+        key = user?.company || `${user?.firstName} ${user?.lastName}` || '(Unknown User)';
+      } else if (groupBy === 'date') {
+        key = log.timestamp?.toDate().toLocaleDateString() || 'Unknown Date';
+      } else if (groupBy === 'itemType') {
+        key = log.itemType;
+      }
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(log);
+      return acc;
+    }, {});
+  };
+  const sortedLogs = sortLogs(filteredLogs);
+  const groupedLogs = groupLogs(sortedLogs);
 
   const handleExportCSV = () => {
     const csv = convertLogsToCSV(filteredLogs, userMap);
@@ -145,26 +212,6 @@ export default function AdminPage() {
     a.download = `snack-logs-${dateStr}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const handleExportXLSX = () => {
-    const csvData = filteredLogs.map((log) => ({
-      Date: log.timestamp?.toDate().toLocaleDateString() || '',
-      Email: userMap[log.userId]?.email || '',
-      User:
-        userMap[log.userId]?.company ||
-        `${userMap[log.userId]?.firstName || ''} ${userMap[log.userId]?.lastName || ''}`.trim() ||
-        (log.userId === currentUser?.uid ? '(You)' : log.userId),
-      Item: log.itemType,
-      Count: log.count,
-      Total: log.total?.toFixed(2) || '0.00',
-    }));
-
-    const worksheet = XLSXUtils.json_to_sheet(csvData);
-    const workbook = XLSXUtils.book_new();
-    XLSXUtils.book_append_sheet(workbook, worksheet, 'Snack Logs');
-    const dateStr = new Date().toISOString().split('T')[0];
-    writeFile(workbook, `snack-logs-${dateStr}.csv`);
   };
 
   if (loading) return <p className="text-center mt-10 text-gray-500">Loading...</p>;
@@ -195,7 +242,7 @@ export default function AdminPage() {
 
         {/* Logs Section */}
         <section>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">📦 Snack Logs</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4"> 📊 Snack Logs</h2>
 
           {/* 👤 Filter by User */}
           <div className="mb-6">
@@ -234,21 +281,75 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 mt-6">
+          {/* 🧃 Filter by Item Type */}
+          <div className="mb-6">
+            <label className="block text-sm text-gray-600 mb-1">Filter by Item Type</label>
+            <div className="flex gap-4 flex-wrap">
+              {['snack', 'drink', 'print'].map((type) => (
+                <label key={type} className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedItemTypes.includes(type)}
+                    onChange={() => {
+                      setSelectedItemTypes((prev) =>
+                        prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+                      );
+                    }}
+                  />
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* 📊 Summary by Type */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-6">
+            {['snack', 'drink', 'print'].map((type) => {
+              const filtered = filteredLogs.filter((log) => log.itemType === type);
+              const total = filtered.reduce((sum, log) => sum + (log.total || 0), 0);
+              return (
+                <div
+                  key={type}
+                  className="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm text-center"
+                >
+                  <div className="font-semibold capitalize">{type}s</div>
+                  <div className="text-lg font-bold">${total.toFixed(2)}</div>
+                </div>
+              );
+            })}
+
+            {/* 🖨️ Print + Admin Fee Summary */}
+            <div className="col-span-full text-center text-xs text-gray-600 space-y-1 pt-1 -ml-4 sm:-ml-70">
+              {filteredLogs.some((log) => log.itemType === 'print') && (
+                <div>
+                  🖨️ B/W Total: $
+                  {filteredLogs
+                    .filter((log) => log.itemType === 'print' && log.printType === 'bw')
+                    .reduce((sum, log) => sum + (log.total || 0), 0)
+                    .toFixed(2)}{' '}
+                  | 🎨 Color Total: $
+                  {filteredLogs
+                    .filter((log) => log.itemType === 'print' && log.printType === 'color')
+                    .reduce((sum, log) => sum + (log.total || 0), 0)
+                    .toFixed(2)}
+                </div>
+              )}
+
+              {(selectedItemTypes.includes('snack') || selectedItemTypes.includes('drink')) && (
+                <div>
+                  💼 Admin Fees: ${adminFeeTotal.toFixed(2)}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6">
             <button
               onClick={handleExportCSV}
               className="flex items-center gap-2 bg-[#799c75] text-white px-5 py-2 rounded-lg shadow-sm hover:bg-[#6a8c65] transition-all"
             >
-              📥 Export CSV
-              <span className="text-xs opacity-80">(csv)</span>
-            </button>
-
-            <button
-              onClick={handleExportXLSX}
-              className="flex items-center gap-2 bg-[#799c75] text-white px-5 py-2 rounded-lg shadow-sm hover:bg-[#6a8c65] transition-all"
-            >
-              📊 Export Excel
-              <span className="text-xs opacity-80">(xlsx)</span>
+              📥 Export Logs
+              <span className="text-xs opacity-80">(CSV format)</span>
             </button>
           </div>
            {/* 💵 Selected user summary */}
@@ -266,18 +367,93 @@ export default function AdminPage() {
               <table className="min-w-full text-sm bg-white">
                   <thead>
                     <tr>
-                      <th className="p-3 sticky top-0 z-10 bg-white text-left w-40 max-w-[10rem]">User</th>
-                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Item Type</th>
-                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Print Type</th>
-                      <th className="p-3 sticky top-0 z-10 bg-white text-center">Count</th>
-                      <th className="p-3 sticky top-0 z-10 bg-white text-right">Total</th>
-                      <th className="p-3 sticky top-0 z-10 bg-white text-right">Date</th>
+                    <th
+                        className="p-3 sticky top-0 z-10 bg-white text-left w-40 max-w-[10rem] cursor-pointer"
+                        onClick={() =>
+                          setSortConfig(prev =>
+                            prev?.key === 'userId' && prev.direction === 'asc'
+                              ? { key: 'userId', direction: 'desc' }
+                              : { key: 'userId', direction: 'asc' }
+                          )
+                        }
+                      >
+                        User {sortConfig?.key === 'userId' ? (sortConfig.direction === 'asc' ? '⬆️' : '⬇️') : ''}
+                      </th>
+                      <th
+                        className="p-3 sticky top-0 z-10 bg-white text-center cursor-pointer"
+                        onClick={() =>
+                          setSortConfig(prev =>
+                            prev?.key === 'itemType' && prev.direction === 'asc'
+                              ? { key: 'itemType', direction: 'desc' }
+                              : { key: 'itemType', direction: 'asc' }
+                          )
+                        }
+                      >
+                        Item Type {sortConfig?.key === 'itemType' ? (sortConfig.direction === 'asc' ? '⬆️' : '⬇️') : ''}
+                      </th>
+                      <th
+                        className="p-3 sticky top-0 z-10 bg-white text-center cursor-pointer"
+                        onClick={() =>
+                          setSortConfig(prev =>
+                            prev?.key === 'printType' && prev.direction === 'asc'
+                              ? { key: 'printType', direction: 'desc' }
+                              : { key: 'printType', direction: 'asc' }
+                          )
+                        }
+                      >
+                        Print Type {sortConfig?.key === 'printType' ? (sortConfig.direction === 'asc' ? '⬆️' : '⬇️') : ''}
+                      </th>
+                      <th
+                        className="p-3 sticky top-0 z-10 bg-white text-center cursor-pointer"
+                        onClick={() =>
+                          setSortConfig(prev =>
+                            prev?.key === 'count' && prev.direction === 'asc'
+                              ? { key: 'count', direction: 'desc' }
+                              : { key: 'count', direction: 'asc' }
+                          )
+                        }
+                      >
+                        Count {sortConfig?.key === 'count' ? (sortConfig.direction === 'asc' ? '⬆️' : '⬇️') : ''}
+                      </th>
+                      <th
+                        className="p-3 sticky top-0 z-10 bg-white text-right cursor-pointer"
+                        onClick={() =>
+                          setSortConfig(prev =>
+                            prev?.key === 'total' && prev.direction === 'asc'
+                              ? { key: 'total', direction: 'desc' }
+                              : { key: 'total', direction: 'asc' }
+                          )
+                        }
+                      >
+                        Total {sortConfig?.key === 'total' ? (sortConfig.direction === 'asc' ? '⬆️' : '⬇️') : ''}
+                      </th>
+                      <th
+                        className="p-3 sticky top-0 z-10 bg-white text-right cursor-pointer"
+                        onClick={() =>
+                          setSortConfig(prev =>
+                            prev?.key === 'date' && prev.direction === 'asc'
+                              ? { key: 'date', direction: 'desc' }
+                              : { key: 'date', direction: 'asc' }
+                          )
+                        }
+                      >
+                        Date {sortConfig?.key === 'date' ? (sortConfig.direction === 'asc' ? '⬆️' : '⬇️') : ''}
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredLogs.map((log, i) => (
+                  {Object.entries(groupedLogs).map(([groupKey, logs]) => (
+                  <tbody key={groupKey}>
+                    <tr className="bg-gray-100 text-sm text-gray-600">
+                      <td colSpan={6} className="px-4 py-2 font-semibold">
+                        {groupBy === 'user' && '👤 '}
+                        {groupBy === 'date' && '📅 '}
+                        {groupBy === 'itemType' && '🧃 '}
+                        {groupKey}
+                      </td>
+                    </tr>
+                    {logs.map((log, i) => (
                       <tr key={i} className="border-b hover:bg-gray-50">
-                       <td className="p-3 text-left w-40 max-w-[10rem] whitespace-normal break-words">
+                        <td className="p-3 text-left w-40 max-w-[10rem] whitespace-normal break-words">
                           {userMap[log.userId]?.company ||
                             `${userMap[log.userId]?.firstName || ''} ${userMap[log.userId]?.lastName || ''}`.trim() ||
                             userMap[log.userId]?.email ||
@@ -295,6 +471,7 @@ export default function AdminPage() {
                       </tr>
                     ))}
                   </tbody>
+                ))}
                 </table>
               </div>
           </div>

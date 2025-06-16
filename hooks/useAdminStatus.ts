@@ -1,4 +1,3 @@
-// hooks/useAdminStatus.ts
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -11,9 +10,6 @@ export function useAdminStatus(enabled: boolean = true) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🔒 Early exit: don't run unless `enabled` is true
-  // `enabled` should be set to true only when we know auth is ready (i.e. user is logged in)
-  // This prevents accidental Firestore reads while Firebase is still initializing (e.g. right after logout)
     if (!enabled) {
       setIsAdmin(false);
       setUser(null);
@@ -21,7 +17,6 @@ export function useAdminStatus(enabled: boolean = true) {
       return;
     }
 
-     // ...proceed with admin check if enabled === true
     const checkAdmin = async () => {
       const currentUser = auth.currentUser;
 
@@ -33,9 +28,15 @@ export function useAdminStatus(enabled: boolean = true) {
       }
 
       try {
-        const token = await currentUser.getIdTokenResult(true);
+        // ✅ Force refresh token to pull latest claims
+        const freshToken = await currentUser.getIdToken(true);
+        console.log('🔁 Fresh ID token (forced):', freshToken);
+
+        const tokenResult = await currentUser.getIdTokenResult();
+        console.log('🧾 Token claims:', tokenResult.claims);
+
         setUser(currentUser);
-        setIsAdmin(!!token.claims.admin);
+        setIsAdmin(!!tokenResult.claims.isAdmin);
       } catch (err) {
         console.error('❌ Error fetching token claims:', err);
         setIsAdmin(false);
