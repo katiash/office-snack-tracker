@@ -155,8 +155,8 @@ export default function AdminPage() {
     const { key, direction } = sortConfig;
   
     return [...logs].sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
+      let aVal: string | number = '';
+      let bVal: string | number = '';
   
       if (key === 'date') {
         aVal = a.timestamp?.toDate()?.getTime() || 0;
@@ -167,13 +167,20 @@ export default function AdminPage() {
           if (val?.toLowerCase?.() === 'color') return 2;
           return 3;
         };
-      
+  
         aVal = normalize(a.printType);
         bVal = normalize(b.printType);
       } else {
-        aVal = a[key];
-        bVal = b[key];
-        // console.log('Sorting printType → A:', a.printType, 'B:', b.printType);
+        const aRaw = a[key];
+        const bRaw = b[key];
+  
+        if (typeof aRaw === 'number' && typeof bRaw === 'number') {
+          aVal = aRaw;
+          bVal = bRaw;
+        } else {
+          aVal = String(aRaw ?? '');
+          bVal = String(bRaw ?? '');
+        }
       }
   
       if (aVal < bVal) return direction === 'asc' ? -1 : 1;
