@@ -361,7 +361,7 @@ export default function AdminPage() {
           </div>
            {/* 💵 Selected user summary */}
           {selectedUserId && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg shadow-sm mb-4">
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg shadow-sm mb-4 mt-4">
               <span className="text-sm">🧾 Total for selected user in this date range:</span>
               <div className="text-2xl font-bold mt-1">
                 ${filteredLogs.reduce((sum, log) => sum + (log.total || 0), 0).toFixed(2)}
