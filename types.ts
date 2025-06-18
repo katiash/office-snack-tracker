@@ -15,5 +15,16 @@ export type UserMap = {
     company?: string;
     firstName?: string;
     lastName?: string;
-  };
+  }
+}
+
+// types/index.ts
+export type UserMeta = {
+  uid: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  company?: string;
+  isAdmin?: boolean;
 };
+
