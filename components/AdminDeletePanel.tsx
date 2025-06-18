@@ -61,11 +61,13 @@ export default function AdminDeletePanel() {
       } else {
         setResult(`❌ Error: ${data.error || 'Unknown error'}`);
       }
-    } catch (err: any) {
-      setResult(`❌ Exception: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+          setResult(`❌ Exception: ${err.message}`);
+        } else {
+          setResult('❌ An unknown error occurred.');
+        }
+      }
   };
 
   return (
