@@ -10,16 +10,17 @@ import { Timestamp } from 'firebase/firestore';
 import DatePicker from 'react-datepicker';
 import ProfileModal from '@/components/ProfileModal';
 import { convertLogsToCSV } from '@/lib/exportToCSV';
+import AdminDeletePanel from '@/components/AdminDeletePanel';
+import type { UserMeta } from '@/types';
 
-
-type UserMeta = {
-  uid: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  company?: string;
-  isAdmin?: boolean;
-};
+// type UserMeta = {
+//   uid: string;
+//   email: string;
+//   firstName: string;
+//   lastName: string;
+//   company?: string;
+//   isAdmin?: boolean;
+// };
 
 type SnackLog = {
   userId: string;
@@ -138,17 +139,29 @@ export default function AdminPage() {
     }
   };
 
+
+
   const filteredLogs = logs.filter((log) => {
     const logDate = log.timestamp?.toDate();
     if (!logDate) return false;
+  
+    const adjustedEndDate = endDate
+      ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999)
+      : null;
+  
     if (startDate && logDate < startDate) return false;
-    if (endDate && logDate > endDate) return false;
+    if (adjustedEndDate && logDate > adjustedEndDate) return false;
     if (selectedUserId && log.userId !== selectedUserId) return false;
     if (!selectedItemTypes.includes(log.itemType)) return false;
+  
     return true;
   });
 
-  const adminFeeTotal = filteredLogs.reduce((sum, log) => sum + (log.adminFee || 0), 0);
+  const snackDrinkTotal = filteredLogs
+  .filter(log => log.itemType === 'snack' || log.itemType === 'drink')
+  .reduce((sum, log) => sum + (log.total || 0), 0);
+  const adminFeeTotal = +(snackDrinkTotal * 0.2).toFixed(2); // Rounded to 2 decimals
+
   const sortLogs = (logs: SnackLog[]) => {
     if (!sortConfig) return logs;
   
@@ -310,45 +323,42 @@ export default function AdminPage() {
           </div>
 
           {/* 📊 Summary by Type */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-6">
-            {['snack', 'drink', 'print'].map((type) => {
-              const filtered = filteredLogs.filter((log) => log.itemType === type);
-              const total = filtered.reduce((sum, log) => sum + (log.total || 0), 0);
-              return (
-                <div
-                  key={type}
-                  className="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm text-center"
-                >
-                  <div className="font-semibold capitalize">{type}s</div>
-                  <div className="text-lg font-bold">${total.toFixed(2)}</div>
-                </div>
-              );
-            })}
-
-            {/* 🖨️ Print + Admin Fee Summary */}
-            <div className="col-span-full text-center text-xs text-gray-600 space-y-1 pt-1 -ml-4 sm:-ml-70">
-              {filteredLogs.some((log) => log.itemType === 'print') && (
-                <div>
-                  🖨️ B/W Total: $
-                  {filteredLogs
-                    .filter((log) => log.itemType === 'print' && log.printType === 'bw')
-                    .reduce((sum, log) => sum + (log.total || 0), 0)
-                    .toFixed(2)}{' '}
-                  | 🎨 Color Total: $
-                  {filteredLogs
-                    .filter((log) => log.itemType === 'print' && log.printType === 'color')
-                    .reduce((sum, log) => sum + (log.total || 0), 0)
-                    .toFixed(2)}
-                </div>
-              )}
-
-              {(selectedItemTypes.includes('snack') || selectedItemTypes.includes('drink')) && (
-                <div>
-                  💼 Admin Fees: ${adminFeeTotal.toFixed(2)}
-                </div>
-              )}
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-1">
+  {['snack', 'drink', 'print'].map((type) => {
+    const filtered = filteredLogs.filter((log) => log.itemType === type);
+    const total = filtered.reduce((sum, log) => sum + (log.total || 0), 0);
+    return (
+      <div
+        key={type}
+        className="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm text-center"
+      >
+        <div className="font-semibold capitalize">{type}s</div>
+        <div className="text-lg font-bold">${total.toFixed(2)}</div>
+      </div>
+    );
+  })}
+    {/* Breakdown Card */}
+    <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm text-sm text-gray-700 space-y-1">
+        <div className="font-semibold text-center mb-1">🧾 Breakdown</div>
+        {filteredLogs.some((log) => log.itemType === 'print') && (
+          <div>
+            🖨️ B/W Total: $
+            {filteredLogs
+              .filter((log) => log.itemType === 'print' && log.printType === 'bw')
+              .reduce((sum, log) => sum + (log.total || 0), 0)
+              .toFixed(2)}{' '}
+            | 🎨 Color Total: $
+            {filteredLogs
+              .filter((log) => log.itemType === 'print' && log.printType === 'color')
+              .reduce((sum, log) => sum + (log.total || 0), 0)
+              .toFixed(2)}
           </div>
+        )}
+        {(selectedItemTypes.includes('snack') || selectedItemTypes.includes('drink')) && (
+          <div>💼  Admin Fees (20% for snacks and drinks): ${adminFeeTotal}</div>
+        )}
+      </div>
+    </div>
 
           <div className="mt-6">
             <button
@@ -360,14 +370,14 @@ export default function AdminPage() {
             </button>
           </div>
            {/* 💵 Selected user summary */}
-          {selectedUserId && (
+          {/* {selectedUserId && (
             <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg shadow-sm mb-4 mt-4">
               <span className="text-sm">🧾 Total for selected user in this date range:</span>
               <div className="text-2xl font-bold mt-1">
                 ${filteredLogs.reduce((sum, log) => sum + (log.total || 0), 0).toFixed(2)}
               </div>
             </div>
-          )}
+          )} */}
 
             <div className="mt-6 rounded-md border border-gray-200 shadow-sm overflow-x-auto">
             <div className="max-h-[600px] overflow-y-auto">
@@ -480,6 +490,21 @@ export default function AdminPage() {
                   </tbody>
                 ))}
                 </table>
+
+               {/* ✅ Sticky summary row BELOW the table, but aligned */}
+                <div className="sticky bottom-0 z-20 bg-blue-50 text-blue-900 text-sm font-semibold border-t border-blue-200">
+                  <div className="grid grid-cols-6">
+                    <div className="col-span-3 p-3 text-right">Total for filtered logs:</div>
+                    <div className="p-3 text-center">
+                      {filteredLogs.reduce((sum, log) => sum + (log.count || 0), 0)}
+                    </div>
+                    <div className="p-3 text-right">
+                      ${filteredLogs.reduce((sum, log) => sum + (log.total || 0), 0).toFixed(2)}
+                    </div>
+                    <div className="p-3">{/* Empty for right spacing */}</div>
+                  </div>
+                </div>
+
               </div>
           </div>
         </section>
@@ -533,6 +558,10 @@ export default function AdminPage() {
           </div>
         </section>
       </div>
+      <section className="mt-12 border-t pt-6">
+        <h2 className="text-xl font-semibold mb-4 text-red-700">🔧 Danger Zone: Admin Actions</h2>
+        <AdminDeletePanel />
+      </section>
     </div>
   );
 }
