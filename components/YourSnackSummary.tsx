@@ -66,8 +66,6 @@ export default function YourSnackSummary({ refreshTrigger }: { refreshTrigger: b
         }
       }
 
-      const derivedAdminFee = 0.2 * snackDrinkTotalSum;
-
       setSnackDrinkTotal(snackDrinkTotalSum);
       setSnackDrinkCount(snackDrinkItemCount);
       setPrintTotal(printTotalSum);
@@ -93,15 +91,6 @@ export default function YourSnackSummary({ refreshTrigger }: { refreshTrigger: b
         <h3 className="text-[#FF7300] font-semibold">🥤 Snacks + Drinks</h3>
         <ul className="text-sm space-y-1">
           <li>• Items: {snackDrinkCount}</li>
-          {/* <li>
-            <div className="bg-green-50 border border-green-200 rounded-md px-3 py-2 text-green-800 text-sm font-medium shadow-sm">
-              💼  Admin Fees:{' '}
-              <span className="font-bold">
-                ${derivedAdminFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </span>{' '}
-              <span className="text-xs text-gray-500 font-normal">(20% included in total)</span>
-            </div>
-          </li> */}
           <li>
             • Total:{' '}
             <strong>
