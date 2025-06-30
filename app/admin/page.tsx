@@ -13,15 +13,6 @@ import { convertLogsToCSV } from '@/lib/exportToCSV';
 import AdminDeletePanel from '@/components/AdminDeletePanel';
 import type { UserMeta } from '@/types';
 
-// type UserMeta = {
-//   uid: string;
-//   email: string;
-//   firstName: string;
-//   lastName: string;
-//   company?: string;
-//   isAdmin?: boolean;
-// };
-
 type SnackLog = {
   userId: string;
   timestamp: Timestamp;
@@ -49,6 +40,7 @@ export default function AdminPage() {
   const isProfileIncomplete = currentMeta && (!currentMeta.firstName || !currentMeta.lastName);
   const [groupBy] = useState<'none' | 'user' | 'date' | 'itemType'>('none');
   const [sortConfig, setSortConfig] = useState<{ key: keyof SnackLog | 'date'; direction: 'asc' | 'desc' } | null>(null);
+  
   useAuditPrintTypeValues(); 
 
   useEffect(() => {
@@ -70,8 +62,6 @@ export default function AdminPage() {
     };
     fetchUsers();
   }, []);
-
-
   
   useEffect(() => {
     const fetchLogs = async () => {
@@ -139,8 +129,6 @@ export default function AdminPage() {
     }
   };
 
-
-
   const filteredLogs = logs.filter((log) => {
     const logDate = log.timestamp?.toDate();
     if (!logDate) return false;
@@ -156,6 +144,12 @@ export default function AdminPage() {
   
     return true;
   });
+
+  const bwPrintCount = filteredLogs.filter(log => log.itemType === 'print' && log.printType === 'bw')
+  .reduce((sum, log) => sum + (log.count || 0), 0);
+
+  const colorPrintCount = filteredLogs.filter(log => log.itemType === 'print' && log.printType === 'color')
+  .reduce((sum, log) => sum + (log.count || 0), 0);
 
   const snackDrinkTotal = filteredLogs
   .filter(log => log.itemType === 'snack' || log.itemType === 'drink')
@@ -322,44 +316,62 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* 📊 Summary by Type */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-1">
-  {['snack', 'drink', 'print'].map((type) => {
-    const filtered = filteredLogs.filter((log) => log.itemType === type);
-    const total = filtered.reduce((sum, log) => sum + (log.total || 0), 0);
-    return (
-      <div
-        key={type}
-        className="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm text-center"
-      >
-        <div className="font-semibold capitalize">{type}s</div>
-        <div className="text-lg font-bold">${total.toFixed(2)}</div>
-      </div>
-    );
-  })}
-    {/* Breakdown Card */}
-    <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm text-sm text-gray-700 space-y-1">
-        <div className="font-semibold text-center mb-1">🧾 Breakdown</div>
-        {filteredLogs.some((log) => log.itemType === 'print') && (
-          <div>
-            🖨️ B/W Total: $
-            {filteredLogs
-              .filter((log) => log.itemType === 'print' && log.printType === 'bw')
-              .reduce((sum, log) => sum + (log.total || 0), 0)
-              .toFixed(2)}{' '}
-            | 🎨 Color Total: $
-            {filteredLogs
-              .filter((log) => log.itemType === 'print' && log.printType === 'color')
-              .reduce((sum, log) => sum + (log.total || 0), 0)
-              .toFixed(2)}
-          </div>
-        )}
-        {(selectedItemTypes.includes('snack') || selectedItemTypes.includes('drink')) && (
-          <div>💼  Admin Fees (20% for snacks and drinks): ${adminFeeTotal}</div>
-        )}
-      </div>
-    </div>
+         {/* 📊 Summary by Type – Row 1 */}
+          {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-1"> */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mb-4">
+            {['snack', 'drink', 'print'].map((type) => {
+              const filtered = filteredLogs.filter((log) => log.itemType === type);
+              const total = filtered.reduce((sum, log) => sum + (log.total || 0), 0);
+              return (
+                <div
+                  key={type}
+                  className="bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm text-center"
+                >
+                  <div className="font-semibold capitalize">{type}s</div>
+                  <div className="text-lg font-bold">${total.toFixed(2)}</div>
+                </div>
+              );
+            })}
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 text-sm mb-4">
+              <div className="bg-white border-l-4 border-green-700 p-4 rounded-lg shadow-sm text-sm text-gray-800">
+                <div className="flex items-center gap-2 mb-1 text-green-800 opacity-90 font-semibold text-base">
+                  💼 Admin Fee
+                </div>
+                <div className="text-gray-700">
+                  20% for snacks and drinks: <strong>${adminFeeTotal}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* 📊 Breakdown Card – Row 2 */}
+            <div className="bg-white border-l-4 border-orange-400 p-4 rounded-lg shadow-sm text-sm text-gray-800 mb-6 max-w-sm">
+              <div className="flex items-center gap-2 mb-2 text-orange-600 font-semibold text-base">
+                🖨️ Breakdown
+              </div>
+              {filteredLogs.some((log) => log.itemType === 'print') && (
+                <>
+                  <div className="mb-1">
+                  📄 B/W Total: $
+                    {filteredLogs
+                      .filter((log) => log.itemType === 'print' && log.printType === 'bw')
+                      .reduce((sum, log) => sum + (log.total || 0), 0)
+                      .toFixed(2)}{' '}
+                    <span className="text-xs text-gray-500">({bwPrintCount} items)</span>
+                  </div>
+                  <div className="mb-1">
+                    🎨 Color Total: $
+                    {filteredLogs
+                      .filter((log) => log.itemType === 'print' && log.printType === 'color')
+                      .reduce((sum, log) => sum + (log.total || 0), 0)
+                      .toFixed(2)}{' '}
+                    <span className="text-xs text-gray-500">({colorPrintCount} items)</span>
+                  </div>
+                </>
+              )}
+          </div>
+        
           <div className="mt-6">
             <button
               onClick={handleExportCSV}
