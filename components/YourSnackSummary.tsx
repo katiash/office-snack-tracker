@@ -30,17 +30,18 @@ export default function YourSnackSummary({ refreshTrigger }: { refreshTrigger: b
       const user = auth.currentUser;
       if (!user) return;
       setLoading(true);
-
+    
       const snap = await getDocs(collection(db, 'snackLogs'));
       const logs = snap.docs
         .map((doc) => doc.data())
         .filter((log) => log.userId === user.uid) as SnackLog[];
-
+    
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      setDateRangeText(`Tracking: ${startOfMonth.toLocaleDateString()} – ${endOfMonth.toLocaleDateString()}`);
-
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); // ← Fixed
+    
+      setDateRangeText(`Tracking: ${startOfMonth.toLocaleDateString()} - ${endOfMonth.toLocaleDateString()}`);
+    
       const filteredLogs = logs.filter((log) => {
         const ts = log.timestamp?.toDate();
         return ts && ts >= startOfMonth && ts <= endOfMonth;
