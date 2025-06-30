@@ -348,12 +348,12 @@ export default function AdminPage() {
             {/* 📊 Breakdown Card – Row 2 */}
             <div className="bg-white border-l-4 border-orange-400 p-4 rounded-lg shadow-sm text-sm text-gray-800 mb-6 max-w-sm">
               <div className="flex items-center gap-2 mb-2 text-orange-600 font-semibold text-base">
-                🧾 Breakdown
+                🖨️ Breakdown
               </div>
               {filteredLogs.some((log) => log.itemType === 'print') && (
                 <>
                   <div className="mb-1">
-                    🖨️ B/W Total: $
+                  📄 B/W Total: $
                     {filteredLogs
                       .filter((log) => log.itemType === 'print' && log.printType === 'bw')
                       .reduce((sum, log) => sum + (log.total || 0), 0)

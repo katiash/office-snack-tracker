@@ -115,7 +115,7 @@ export default function YourSnackSummary({ refreshTrigger }: { refreshTrigger: b
         <h3 className="text-[#FF7300] font-semibold">🖨️ Copies + Prints</h3>
         <ul className="text-sm space-y-1">
           <li>
-            • Items: {printCount} ({bwCount} Black & White, {colorCount} 🎨 Color)
+            • Items: {printCount} ( {bwCount} Black & White 📄, {colorCount} Color 🎨 )
           </li>
           <li>
             • Total:{' '}
