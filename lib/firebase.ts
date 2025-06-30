@@ -1,7 +1,8 @@
 // lib/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth,setPersistence, browserLocalPersistence } from 'firebase/auth';
+
 
 
 
@@ -19,6 +20,16 @@ const app = initializeApp(firebaseConfig);
 console.log('🔥 Firebase config:', firebaseConfig);
 
 const auth = getAuth(app);
+
+// ✅ Set persistent auth so login stays across reloads and domains
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('✅ Firebase auth persistence set to local');
+  })
+  .catch((error) => {
+    console.error('🔥 Error setting Firebase persistence:', error);
+  });
+
 const db = getFirestore(app);
 
 
